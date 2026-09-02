@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoDash Pro | Dashboard Crypto com IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(59, 130, 246, 0.18), transparent 30%),
+                linear-gradient(180deg, #081120 0%, #0b1324 45%, #050b16 100%);
+            color: #e5eefc;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(14, 165, 233, 0.75) 100%);
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        .section-card {
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(71, 85, 105, 0.45);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.22);
+        }
+        .feature-card,
+        .pricing-card,
+        .faq-item,
+        .step-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .feature-card:hover,
+        .pricing-card:hover,
+        .step-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 24px 40px rgba(15, 23, 42, 0.28);
+            border-color: rgba(96, 165, 250, 0.45);
+        }
+        .faq-item:hover {
+            border-color: rgba(96, 165, 250, 0.35);
+        }
+        .cta-primary {
+            background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+        }
+        .cta-primary:hover {
+            filter: brightness(1.08);
+        }
+        .cta-secondary {
+            border: 1px solid rgba(191, 219, 254, 0.45);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .cta-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .pill {
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            background: rgba(30, 41, 59, 0.66);
+        }
+        .demo-shell {
+            border: 1px solid rgba(71, 85, 105, 0.6);
+            background: #0f172a;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .demo-browser-bar {
+            background: #1f2937;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.7);
+        }
+        .demo-grid {
+            background:
+                linear-gradient(180deg, rgba(59, 130, 246, 0.1), transparent 28%),
+                #111827;
+        }
+        .soft-text {
+            color: #93a8c7;
+        }
+        .stat-number {
+            background: linear-gradient(90deg, #ffffff 0%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .faq-answer {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <header class="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur">
+        <div class="container mx-auto flex items-center justify-between px-6 py-4">
+            <a href="#" class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600">
+                    <i class="fas fa-chart-line text-white"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold leading-none">CryptoDash</div>
+                    <div class="text-sm font-medium text-blue-300">Pro</div>
+                </div>
+            </a>
+            <nav class="hidden items-center gap-8 text-sm font-medium text-slate-300 md:flex">
+                <a href="#features" class="hover:text-white">Recursos</a>
+                <a href="#how-it-works" class="hover:text-white">Como Funciona</a>
+                <a href="#demo" class="hover:text-white">Demo</a>
+                <a href="#pricing" class="hover:text-white">Planos</a>
+                <a href="#faq" class="hover:text-white">FAQ</a>
+            </nav>
+            <div class="hidden items-center gap-3 md:flex">
+                <a href="/dashboard/" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Entrar</a>
+                <a href="/dashboard/" class="cta-primary rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20">Abrir Dashboard</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="px-6 pb-12 pt-16 md:pt-24">
+        <div class="container mx-auto">
+            <div class="grid items-center gap-12 lg:grid-cols-2">
+                <div>
+                    <div class="mb-5 flex flex-wrap items-center gap-3">
+                        <span class="pill rounded-full px-4 py-1.5 text-sm font-semibold text-blue-200">Dashboard ao vivo</span>
+                        <span class="soft-text text-sm">Dados de mercado + sinais de IA no mesmo fluxo</span>
+                    </div>
+                    <h1 class="mb-6 text-4xl font-extrabold leading-tight text-white md:text-6xl">
+                        Análise crypto com visual forte e execução mais clara.
+                    </h1>
+                    <p class="mb-8 max-w-2xl text-lg leading-8 text-slate-300">
+                        O CryptoDash Pro combina mercado global, gráfico de candles, indicadores técnicos, recomendações de buy/sell/hold e modo demo com desbloqueio por cadastro.
+                    </p>
+                    <div class="flex flex-col gap-4 sm:flex-row">
+                        <a href="/dashboard/" class="cta-primary rounded-2xl px-8 py-4 text-center text-base font-bold text-white shadow-xl shadow-blue-600/20">
+                            Abrir Dashboard
+                        </a>
+                        <a href="#demo" class="cta-secondary rounded-2xl px-8 py-4 text-center text-base font-semibold text-white">
+                            Ver Demonstração
+                        </a>
+                    </div>
+                    <div class="mt-10 grid gap-4 sm:grid-cols-3">
+                        <div class="glass rounded-2xl p-4">
+                            <div class="stat-number text-3xl font-extrabold">BTC</div>
+                            <div class="mt-1 text-sm text-slate-300">Moeda aberta no modo demo</div>
+                        </div>
+                        <div class="glass rounded-2xl p-4">
+                            <div class="stat-number text-3xl font-extrabold">IA</div>
+                            <div class="mt-1 text-sm text-slate-300">Sinais integrados no fluxo</div>
+                        </div>
+                        <div class="glass rounded-2xl p-4">
+                            <div class="stat-number text-3xl font-extrabold">RLS</div>
+                            <div class="mt-1 text-sm text-slate-300">Auth e dados por usuário</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-gradient rounded-[28px] p-1 shadow-2xl shadow-blue-950/40">
+                    <div class="demo-shell">
+                        <div class="demo-browser-bar flex items-center gap-4 px-4 py-3">
+                            <div class="flex gap-2">
+                                <span class="h-3 w-3 rounded-full bg-red-500"></span>
+                                <span class="h-3 w-3 rounded-full bg-yellow-400"></span>
+                                <span class="h-3 w-3 rounded-full bg-green-500"></span>
+                            </div>
+                            <div class="flex-1 rounded-lg bg-slate-700 px-3 py-1.5 text-center text-xs text-slate-200">
+                                /dashboard/
+                            </div>
+                        </div>
+                        <div class="demo-grid p-5">
+                            <div class="mb-4 flex items-center justify-between">
+                                <div>
+                                    <div class="text-xs uppercase tracking-[0.2em] text-sky-300">Mercado</div>
+                                    <div class="mt-1 text-2xl font-bold text-white">Bitcoin (BTC)</div>
+                                </div>
+                                <div class="rounded-xl bg-emerald-500/15 px-3 py-2 text-right">
+                                    <div class="text-sm text-emerald-300">Preço ao vivo</div>
+                                    <div class="text-xl font-bold text-emerald-300">US$ 78.006</div>
+                                </div>
+                            </div>
+                            <div class="section-card mb-4 rounded-2xl p-4">
+                                <div class="mb-3 flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-200">Gráfico e recomendação</span>
+                                    <span class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-200">4H</span>
+                                </div>
+                                <div class="flex h-48 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/80">
+                                    <div class="text-center">
+                                        <i class="fas fa-chart-line mb-3 text-5xl text-blue-400"></i>
+                                        <div class="font-semibold text-white">Candles + marcadores</div>
+                                        <div class="mt-1 text-sm text-slate-400">setup visual parecido com o dashboard real</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-3">
+                                <div class="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+                                    <div class="text-xs uppercase tracking-wide text-slate-400">Sinal</div>
+                                    <div class="mt-2 text-lg font-bold text-emerald-300">Buy</div>
+                                </div>
+                                <div class="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+                                    <div class="text-xs uppercase tracking-wide text-slate-400">Target</div>
+                                    <div class="mt-2 text-lg font-bold text-white">81.200</div>
+                                </div>
+                                <div class="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+                                    <div class="text-xs uppercase tracking-wide text-slate-400">Stop</div>
+                                    <div class="mt-2 text-lg font-bold text-white">75.900</div>
+                                </div>
+                            </div>
+                            <div class="mt-4 rounded-2xl border border-sky-500/20 bg-sky-500/10 p-4 text-sm leading-7 text-slate-200">
+                                Indicador de saída, perfil de risco e alertas persistidos complementam o fluxo para quem cria conta.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="px-6 py-8">
+        <div class="container mx-auto">
+            <div class="grid gap-4 md:grid-cols-4">
+                <div class="section-card rounded-2xl p-5">
+                    <div class="text-3xl font-extrabold stat-number">Binance</div>
+                    <div class="mt-2 text-sm text-slate-400">Candles e preço ao vivo</div>
+                </div>
+                <div class="section-card rounded-2xl p-5">
+                    <div class="text-3xl font-extrabold stat-number">CoinGecko</div>
+                    <div class="mt-2 text-sm text-slate-400">Mercado global e dominância</div>
+                </div>
+                <div class="section-card rounded-2xl p-5">
+                    <div class="text-3xl font-extrabold stat-number">Supabase</div>
+                    <div class="mt-2 text-sm text-slate-400">Login, settings e alertas por usuário</div>
+                </div>
+                <div class="section-card rounded-2xl p-5">
+                    <div class="text-3xl font-extrabold stat-number">API</div>
+                    <div class="mt-2 text-sm text-slate-400">Recomendações e histórico</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="px-6 py-20">
+        <div class="container mx-auto">
+            <div class="mx-auto mb-14 max-w-3xl text-center">
+                <h2 class="text-3xl font-bold text-white md:text-4xl">Mistura de clareza com impacto visual</h2>
+                <p class="mt-4 text-lg text-slate-400">
+                    Mantém o hero forte e o clima crypto, mas com seções mais organizadas e leitura mais fácil.
+                </p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div class="feature-card section-card rounded-3xl p-7">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600/20 text-2xl text-blue-300">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Recomendação com IA</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Buy, sell e hold conectados ao seu backend, com histórico e contexto visual no dashboard.</p>
+                </div>
+                <div class="feature-card section-card rounded-3xl p-7">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600/20 text-2xl text-emerald-300">
+                        <i class="fas fa-chart-candlestick"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Gráfico de candles</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Timeframes, régua, indicadores e leitura rápida para tomada de decisão mais objetiva.</p>
+                </div>
+                <div class="feature-card section-card rounded-3xl p-7">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600/20 text-2xl text-purple-300">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Modo demo inteligente</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Sem cadastro, libera BTC. Com conta, destrava outras moedas e recursos persistidos.</p>
+                </div>
+                <div class="feature-card section-card rounded-3xl p-7">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-2xl text-amber-300">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Alertas persistidos</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Criação, listagem, pausa e exclusão de alertas por usuário com base no banco.</p>
+                </div>
+                <div class="feature-card section-card rounded-3xl p-7">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/20 text-2xl text-cyan-300">
+                        <i class="fas fa-sliders"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Configuração por perfil</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Modelo, timeframe, candles e perfil de risco sincronizados localmente e por usuário.</p>
+                </div>
+                <div class="feature-card section-card rounded-3xl p-7">
+                    <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/20 text-2xl text-rose-300">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Fluxo de entrada melhor</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Depois do login, o usuário volta automaticamente para a página inicial do dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="px-6 py-20">
+        <div class="container mx-auto">
+            <div class="mx-auto mb-14 max-w-3xl text-center">
+                <h2 class="text-3xl font-bold text-white md:text-4xl">Como funciona</h2>
+                <p class="mt-4 text-lg text-slate-400">Uma estrutura simples para o usuário entender rápido o valor do produto.</p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-3">
+                <div class="step-card section-card rounded-3xl p-8">
+                    <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">1</div>
+                    <h3 class="text-xl font-bold text-white">Abra o dashboard</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Veja o panorama de mercado, Fear & Greed, dominância BTC e as principais moedas.</p>
+                </div>
+                <div class="step-card section-card rounded-3xl p-8">
+                    <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">2</div>
+                    <h3 class="text-xl font-bold text-white">Leia o sinal</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Consulte recomendação, target, stop e indicadores técnicos dentro do fluxo visual.</p>
+                </div>
+                <div class="step-card section-card rounded-3xl p-8">
+                    <div class="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white">3</div>
+                    <h3 class="text-xl font-bold text-white">Cadastre-se para liberar mais</h3>
+                    <p class="mt-3 leading-7 text-slate-400">Desbloqueie outras criptos, alertas e preferências persistidas com login simples.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo" class="px-6 py-20">
+        <div class="container mx-auto">
+            <div class="grid items-center gap-10 lg:grid-cols-2">
+                <div>
+                    <h2 class="text-3xl font-bold text-white md:text-4xl">Uma demo mais convincente</h2>
+                    <p class="mt-5 text-lg leading-8 text-slate-400">
+                        A parte visual continua forte, mas o texto agora explica melhor o que o usuário realmente encontra quando entra no produto.
+                    </p>
+                    <ul class="mt-8 space-y-4 text-slate-300">
+                        <li class="flex items-start gap-3"><i class="fas fa-check-circle mt-1 text-emerald-400"></i><span>Mercado global, Fear & Greed e dominância BTC no topo.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-check-circle mt-1 text-emerald-400"></i><span>Lista de criptos com bloqueio visual inteligente para demo.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-check-circle mt-1 text-emerald-400"></i><span>Portfolio e alertas protegidos por login.</span></li>
+                        <li class="flex items-start gap-3"><i class="fas fa-check-circle mt-1 text-emerald-400"></i><span>Setup do Supabase direto no fluxo de autenticação.</span></li>
+                    </ul>
+                    <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+                        <a href="/dashboard/" class="cta-primary rounded-2xl px-8 py-4 text-center text-base font-bold text-white">Abrir Demo</a>
+                        <a href="#pricing" class="cta-secondary rounded-2xl px-8 py-4 text-center text-base font-semibold text-white">Ver Planos</a>
+                    </div>
+                </div>
+                <div class="section-card rounded-[28px] p-6">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-2xl bg-slate-900 p-5">
+                            <div class="text-sm text-slate-400">Modo sem cadastro</div>
+                            <div class="mt-2 text-xl font-bold text-white">BTC liberado</div>
+                            <div class="mt-3 text-sm leading-6 text-slate-400">Mostra o valor do produto sem entregar tudo de graça.</div>
+                        </div>
+                        <div class="rounded-2xl bg-slate-900 p-5">
+                            <div class="text-sm text-slate-400">Modo com conta</div>
+                            <div class="mt-2 text-xl font-bold text-white">Outras criptos + alertas</div>
+                            <div class="mt-3 text-sm leading-6 text-slate-400">Desbloqueia o fluxo completo com persistência no banco.</div>
+                        </div>
+                        <div class="rounded-2xl bg-slate-900 p-5 sm:col-span-2">
+                            <div class="mb-3 flex items-center justify-between">
+                                <div class="text-sm text-slate-400">Exemplo de jornada</div>
+                                <span class="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">Recomendado</span>
+                            </div>
+                            <div class="grid gap-3 md:grid-cols-4">
+                                <div class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">Landing</div>
+                                <div class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">Dashboard demo</div>
+                                <div class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">Cadastro</div>
+                                <div class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">Dashboard completo</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="px-6 py-20">
+        <div class="container mx-auto">
+            <div class="mx-auto mb-14 max-w-3xl text-center">
+                <h2 class="text-3xl font-bold text-white md:text-4xl">Estrutura de planos mais clara</h2>
+                <p class="mt-4 text-lg text-slate-400">Mesmo que você ainda ajuste a monetização depois, a landing já pode apresentar a lógica do produto.</p>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3">
+                <div class="pricing-card section-card rounded-3xl p-8">
+                    <div class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">Demo</div>
+                    <div class="mt-4 text-4xl font-extrabold text-white">Gratis</div>
+                    <p class="mt-3 leading-7 text-slate-400">Entrada rápida para entender o produto e explorar o BTC.</p>
+                    <ul class="mt-8 space-y-4 text-slate-300">
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Dashboard aberto</li>
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>BTC visível</li>
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>CTA para cadastro</li>
+                    </ul>
+                    <a href="/dashboard/" class="cta-secondary mt-8 block rounded-2xl px-6 py-3 text-center font-semibold text-white">Acessar Demo</a>
+                </div>
+                <div class="pricing-card rounded-3xl border border-blue-400/40 bg-blue-500/10 p-8 shadow-2xl shadow-blue-900/20">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm font-semibold uppercase tracking-[0.25em] text-blue-200">Conta</div>
+                        <span class="rounded-full bg-blue-500 px-3 py-1 text-xs font-bold text-white">Mais forte</span>
+                    </div>
+                    <div class="mt-4 text-4xl font-extrabold text-white">Cadastro</div>
+                    <p class="mt-3 leading-7 text-slate-300">Desbloqueia o fluxo principal e já mostra uma proposta de valor mais completa.</p>
+                    <ul class="mt-8 space-y-4 text-slate-200">
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Outras criptos liberadas</li>
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Alertas persistidos</li>
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Configuração por usuário</li>
+                    </ul>
+                    <a href="/dashboard/" class="cta-primary mt-8 block rounded-2xl px-6 py-3 text-center font-bold text-white">Criar Conta</a>
+                </div>
+                <div class="pricing-card section-card rounded-3xl p-8">
+                    <div class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">Proximo passo</div>
+                    <div class="mt-4 text-4xl font-extrabold text-white">Pro</div>
+                    <p class="mt-3 leading-7 text-slate-400">Espaco para futura monetizacao com planos, limites e recursos premium.</p>
+                    <ul class="mt-8 space-y-4 text-slate-300">
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Mais moedas</li>
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Historico ampliado</li>
+                        <li><i class="fas fa-check mr-2 text-emerald-400"></i>Indicadores premium</li>
+                    </ul>
+                    <a href="#faq" class="cta-secondary mt-8 block rounded-2xl px-6 py-3 text-center font-semibold text-white">Entender Estrategia</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="px-6 py-20">
+        <div class="container mx-auto">
+            <div class="mx-auto mb-14 max-w-3xl text-center">
+                <h2 class="text-3xl font-bold text-white md:text-4xl">FAQ</h2>
+                <p class="mt-4 text-lg text-slate-400">Ajuda a reduzir friccao e aumenta a confianca de quem esta chegando agora.</p>
+            </div>
+            <div class="mx-auto max-w-4xl space-y-4">
+                <div class="faq-item section-card rounded-3xl p-6">
+                    <h3 class="text-lg font-bold text-white">Preciso criar conta para testar?</h3>
+                    <p class="faq-answer mt-3 leading-7">Nao. O modo demo deixa a pessoa explorar o dashboard com BTC aberto e mostra claramente o que destrava com cadastro.</p>
+                </div>
+                <div class="faq-item section-card rounded-3xl p-6">
+                    <h3 class="text-lg font-bold text-white">O dashboard ja esta conectado com login?</h3>
+                    <p class="faq-answer mt-3 leading-7">Sim. O fluxo usa Supabase, com configuracao local e persistencia de preferencias e alertas por usuario.</p>
+                </div>
+                <div class="faq-item section-card rounded-3xl p-6">
+                    <h3 class="text-lg font-bold text-white">Quais dados aparecem no dashboard?</h3>
+                    <p class="faq-answer mt-3 leading-7">Mercado global, Fear & Greed, dominancia BTC, lista de moedas, grafico detalhado e recomendacoes vindas da API.</p>
+                </div>
+                <div class="faq-item section-card rounded-3xl p-6">
+                    <h3 class="text-lg font-bold text-white">Posso usar essa landing como base principal?</h3>
+                    <p class="faq-answer mt-3 leading-7">Sim. Ela ja esta mais equilibrada entre impacto visual, organizacao e aderencia ao produto real.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="px-6 pb-20 pt-6">
+        <div class="container mx-auto">
+            <div class="hero-gradient rounded-[32px] p-1 shadow-2xl shadow-blue-950/30">
+                <div class="rounded-[30px] bg-slate-950 px-8 py-12 text-center md:px-16">
+                    <h2 class="text-3xl font-bold text-white md:text-5xl">Quer ver o produto funcionando agora?</h2>
+                    <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+                        Entre no dashboard, teste o modo demo e depois faca o cadastro para liberar o fluxo completo.
+                    </p>
+                    <div class="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+                        <a href="/dashboard/" class="cta-primary rounded-2xl px-8 py-4 text-base font-bold text-white">Abrir Dashboard</a>
+                        <a href="#features" class="cta-secondary rounded-2xl px-8 py-4 text-base font-semibold text-white">Ver Recursos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

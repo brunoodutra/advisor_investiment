@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIInvestAdvisor | Recomendações Inteligentes de Investimentos</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            overflow-x: hidden;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0b3866 0%, #1a5fb4 100%);
+        }
+        .cta-button {
+            background: linear-gradient(90deg, #FF6B35 0%, #f95738 100%);
+            transition: all 0.3s ease;
+        }
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 107, 53, 0.3);
+        }
+        .secondary-button {
+            background: linear-gradient(90deg, #02C39A 0%, #00A896 100%);
+            transition: all 0.3s ease;
+        }
+        .secondary-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(2, 195, 154, 0.3);
+        }
+        .card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 300px;
+            width: 100%;
+        }
+        .pricing-card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        .pricing-popular {
+            border: 2px solid #02C39A;
+        }
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .faq-item:hover {
+            background-color: #f9fafb;
+        }
+        .header-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .header-link:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #FF6B35;
+            transition: width 0.3s ease;
+        }
+        .header-link:hover:after {
+            width: 100%;
+        }
+        .sentiment-map {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 250px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .sentiment-row {
+            display: flex;
+            flex: 1;
+        }
+        .sentiment-cell {
+            flex: 1;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+        .sentiment-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .buy-indicator {
+            background-color: #02C39A;
+            color: white;
+            border-radius: 4px;
+            padding: 2px 8px;
+        }
+        .hold-indicator {
+            background-color: #FFB703;
+            color: white;
+            border-radius: 4px;
+            padding: 2px 8px;
+        }
+        .sell-indicator {
+            background-color: #E63946;
+            color: white;
+            border-radius: 4px;
+            padding: 2px 8px;
+        }
+        .animated-number {
+            animation: countUp 2s ease-out forwards;
+        }
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Heat Map Legend */
+        .heat-legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            margin-bottom: 30px;
+        }
+        .heat-gradient {
+            width: 200px;
+            height: 20px;
+            background: linear-gradient(to right, #E63946, #FFB703, #02C39A);
+            border-radius: 4px;
+            margin: 0 10px;
+        }
+        .legend-label {
+            font-size: 12px;
+            color: #666;
+        }
+        /* Stock chart annotations */
+        .annotation {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            font-size: 12px;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white shadow-md">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <div class="text-2xl font-bold text-blue-900">AI<span class="text-green-500">Invest</span>Advisor</div>
+            </div>
+            <nav class="hidden md:flex space-x-10">
+                <a href="#features" class="header-link text-gray-700 hover:text-blue-900">Funcionalidades</a>
+                <a href="#how-it-works" class="header-link text-gray-700 hover:text-blue-900">Como Funciona</a>
+                <a href="#testimonials" class="header-link text-gray-700 hover:text-blue-900">Depoimentos</a>
+                <a href="#pricing" class="header-link text-gray-700 hover:text-blue-900">Planos</a>
+                <a href="#faq" class="header-link text-gray-700 hover:text-blue-900">FAQ</a>
+            </nav>
+            <div class="flex items-center">
+                <a href="#" class="hidden md:inline-block px-6 py-2 text-blue-900 font-medium rounded-lg mr-4 hover:bg-blue-50 transition">Login</a>
+                <a href="#" class="px-6 py-2 bg-blue-900 text-white font-medium rounded-lg hover:bg-blue-800 transition">Cadastre-se</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white py-20 md:py-32">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                        Invista com a precisão da <span class="text-yellow-300">Inteligência Artificial</span>
+                    </h1>
+                    <p class="text-lg md:text-xl opacity-80 mb-8">
+                        Nossa IA analisa milhares de dados em tempo real para recomendar as melhores oportunidades de investimento com precisão acima do mercado.
+                    </p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="#" class="cta-button px-8 py-4 text-white font-semibold rounded-lg text-center">
+                            Comece Gratuitamente
+                        </a>
+                        <a href="#how-it-works" class="bg-white bg-opacity-20 px-8 py-4 text-white font-semibold rounded-lg text-center hover:bg-opacity-30 transition">
+                            Como Funciona
+                        </a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 md:pl-10">
+                    <div class="bg-white bg-opacity-10 p-6 rounded-2xl backdrop-filter backdrop-blur-sm shadow-lg">
+                        <div class="flex justify-between items-center mb-6">
+                            <span class="text-xl font-semibold">Desempenho da IA</span>
+                            <div class="text-sm bg-green-500 text-white px-3 py-1 rounded-full">+32.4% em 12 meses</div>
+                        </div>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="heroChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="py-12 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-wrap">
+                <div class="w-full md:w-1/3 p-4 text-center">
+                    <div class="text-4xl font-bold text-blue-900 mb-2">
+                        <span class="animated-number">94</span>%
+                    </div>
+                    <p class="text-gray-600">Precisão nas recomendações</p>
+                </div>
+                <div class="w-full md:w-1/3 p-4 text-center">
+                    <div class="text-4xl font-bold text-blue-900 mb-2">
+                        <span class="animated-number">10.000</span>+
+                    </div>
+                    <p class="text-gray-600">Investidores ativos</p>
+                </div>
+                <div class="w-full md:w-1/3 p-4 text-center">
+                    <div class="text-4xl font-bold text-blue-900 mb-2">
+                        <span class="animated-number">28</span>%
+                    </div>
+                    <p class="text-gray-600">Retorno médio anual</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-blue-900 mb-4">Tecnologia de ponta para seus investimentos</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Nossa plataforma combina algoritmos avançados e análise de dados massivos para oferecer recomendações precisas e personalizadas.
+                </p>
+            </div>
+
+            <!-- Buy/Hold/Sell Feature -->
+            <div class="flex flex-col md:flex-row items-center mb-20">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h3 class="text-2xl font-bold text-blue-900 mb-4">Recomendações Buy/Hold/Sell</h3>
+                    <p class="text-gray-600 mb-6">
+                        Nossa IA analisa mais de 500 ativos financeiros diariamente, avaliando dados fundamentalistas, técnicos e notícias para gerar recomendações precisas de compra, venda ou manutenção.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Análise técnica e fundamentalista combinadas</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Alertas em tempo real de oportunidades</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Explicações detalhadas para cada recomendação</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2 md:pl-10 relative">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 class="font-semibold mb-4">Desempenho das Ações com Sinais</h4>
+                        <div class="chart-container" style="position: relative;">
+                            <canvas id="buyHoldSellChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Buy indicator annotation -->
+                    <div class="annotation" style="top: 60px; right: 40px;">
+                        <span class="buy-indicator">Compra</span> recomendada
+                    </div>
+                    <!-- Sell indicator annotation -->
+                    <div class="annotation" style="top: 150px; right: 100px;">
+                        <span class="sell-indicator">Venda</span> recomendada
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sentiment Analysis Feature -->
+            <div class="flex flex-col md:flex-row-reverse items-center mb-20">
+                <div class="md:w-1/2 mb-10 md:mb-0 md:pl-10">
+                    <h3 class="text-2xl font-bold text-blue-900 mb-4">Análise de Sentimento do Mercado</h3>
+                    <p class="text-gray-600 mb-6">
+                        Nossa IA processa mais de 1.000 fontes de notícias, redes sociais e fóruns financeiros para avaliar o sentimento geral do mercado e identificar tendências antes que se tornem evidentes.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Análise em tempo real de notícias e redes sociais</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Detecção antecipada de mudanças de humor do mercado</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Filtro por setor, região ou classe de ativos</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 class="font-semibold mb-4">Mapa de Calor do Sentimento de Mercado</h4>
+                        <div id="sentimentMap" class="sentiment-map"></div>
+                        <div class="heat-legend">
+                            <span class="legend-label">Negativo</span>
+                            <div class="heat-gradient"></div>
+                            <span class="legend-label">Positivo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Recommendation Feature -->
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h3 class="text-2xl font-bold text-blue-900 mb-4">Carteiras Personalizadas</h3>
+                    <p class="text-gray-600 mb-6">
+                        Com base no seu perfil de investidor, objetivos financeiros e tolerância a risco, nossa IA cria carteiras personalizadas com o melhor equilíbrio entre risco e retorno.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Diversificação inteligente entre classes de ativos</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Rebalanceamento automático para otimizar retornos</span>
+                        </li>
+                        <li class="flex items-center">
+                            <span class="bg-green-100 text-green-600 p-1 rounded-full mr-2"><i class="fas fa-check"></i></span>
+                            <span>Ajustes baseados em cenários econômicos projetados</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2 md:pl-10">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 class="font-semibold mb-4">Desempenho da Carteira Recomendada</h4>
+                        <div class="chart-container">
+                            <canvas id="portfolioChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="py-20 bg-blue-900 text-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Como Funciona</h2>
+                <p class="text-xl opacity-80 max-w-3xl mx-auto">
+                    Nossa IA usa um processo sofisticado para analisar o mercado e gerar recomendações personalizadas.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap -mx-4">
+                <div class="w-full md:w-1/3 px-4 mb-8">
+                    <div class="bg-white bg-opacity-10 p-6 rounded-xl h-full">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold mb-6">1</div>
+                        <h3 class="text-2xl font-bold mb-4">Coleta de Dados</h3>
+                        <p class="opacity-80">
+                            Nossos algoritmos coletam continuamente dados de mercado, notícias, relatórios financeiros e redes sociais para análise em tempo real.
+                        </p>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 px-4 mb-8">
+                    <div class="bg-white bg-opacity-10 p-6 rounded-xl h-full">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold mb-6">2</div>
+                        <h3 class="text-2xl font-bold mb-4">Processamento de IA</h3>
+                        <p class="opacity-80">
+                            Modelos de machine learning e redes neurais processam os dados para identificar padrões, correlações e oportunidades de investimento.
+                        </p>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 px-4 mb-8">
+                    <div class="bg-white bg-opacity-10 p-6 rounded-xl h-full">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold mb-6">3</div>
+                        <h3 class="text-2xl font-bold mb-4">Recomendações Personalizadas</h3>
+                        <p class="opacity-80">
+                            Com base no seu perfil, objetivos e cenário de mercado, nossa IA entrega recomendações personalizadas diretamente no seu dashboard.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <a href="#" class="cta-button inline-block px-8 py-4 text-white font-semibold rounded-lg">
+                    Experimente Grátis por 7 Dias
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-blue-900 mb-4">O que Dizem Nossos Clientes</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Investidores que transformaram suas estratégias com nossa plataforma.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-8 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-6">
+                        <div class="text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <span class="text-gray-500">5.0</span>
+                    </div>
+                    <p class="text-gray-600 mb-6">
+                        "As recomendações da plataforma me ajudaram a aumentar minha carteira em 42% no último ano. A análise de sentimento me salvou de perdas significativas durante a última correção do mercado."
+                    </p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold mr-4">RL</div>
+                        <div>
+                            <h4 class="font-semibold">Ricardo Lima</h4>
+                            <p class="text-sm text-gray-500">Investidor há 5 anos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-6">
+                        <div class="text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <span class="text-gray-500">5.0</span>
+                    </div>
+                    <p class="text-gray-600 mb-6">
+                        "Mesmo sendo iniciante no mercado, consegui resultados surpreendentes seguindo as recomendações das carteiras personalizadas. A plataforma é intuitiva e as explicações são claras."
+                    </p>
+                    <div class="flex items-center">
+                        <img src="https://media.licdn.com/dms/image/v2/D4D35AQH2LPVzRhlWsg/profile-framedphoto-shrink_800_800/profile-framedphoto-shrink_800_800/0/1728999210744?e=1749513600&v=beta&t=GetoXmgvU_tgIVl8rB3mDevxpGHs8W82V1dtiAS0J1k" 
+                            alt="Foto de Geovanna Monte" class="w-12 h-12 rounded-full mr-4 object-cover">
+                        <div>
+                            <h4 class="font-semibold">Geovanna Monte</h4>
+                            <p class="text-sm text-gray-500">Investidora iniciante</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-xl shadow-sm">
+                    <div class="flex items-center mb-6">
+                        <div class="text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <span class="text-gray-500">4.5</span>
+                    </div>
+                    <p class="text-gray-600 mb-6">
+                        "Como profissional do mercado financeiro, uso a plataforma como ferramenta complementar para validar minhas análises. O sistema de alerta antecipado já me ajudou diversas vezes a antecipar movimentos."
+                    </p>
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold mr-4">MA</div>
+                        <div>
+                            <h4 class="font-semibold">Marcelo Andrade</h4>
+                            <p class="text-sm text-gray-500">Analista de Investimentos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16 text-center">
+                <a href="#" class="text-blue-900 font-semibold hover:text-blue-700 flex items-center justify-center">
+                    Ver mais depoimentos <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-blue-900 mb-4">Planos para Todos os Perfis</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Escolha o plano ideal para suas necessidades e comece a transformar seus investimentos hoje mesmo.
+                </p>
+            </div>
+
+            <div class="flex flex-col md:flex-row justify-center -mx-4">
+                <div class="w-full md:w-1/3 px-4 mb-8">
+                    <div class="pricing-card bg-white p-8 h-full rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-2">Básico</h3>
+                        <p class="text-gray-500 mb-6">Ideal para investidores iniciantes</p>
+                        <div class="text-4xl font-bold text-blue-900 mb-6">R$49<span class="text-lg font-normal text-gray-500">/mês</span></div>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Recomendações Buy/Hold/Sell</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Análise de até 50 ativos</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>1 Carteira personalizada</span>
+                            </li>
+                            <li class="flex items-center text-gray-400">
+                                <span class="mr-2"><i class="fas fa-times"></i></span>
+                                <span>Análise de sentimento</span>
+                            </li>
+                            <li class="flex items-center text-gray-400">
+                                <span class="mr-2"><i class="fas fa-times"></i></span>
+                                <span>Alertas em tempo real</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="block text-center px-6 py-3 border-2 border-blue-900 text-blue-900 rounded-lg font-semibold hover:bg-blue-50 transition">Começar Agora</a>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 px-4 mb-8">
+                    <div class="pricing-card pricing-popular bg-white p-8 h-full rounded-xl shadow-xl relative">
+                        <div class="absolute top-0 right-0 bg-green-500 text-white text-sm font-semibold px-4 py-1 rounded-bl-lg rounded-tr-lg">Mais Popular</div>
+                        <h3 class="text-2xl font-bold mb-2">Premium</h3>
+                        <p class="text-gray-500 mb-6">Para investidores comprometidos</p>
+                        <div class="text-4xl font-bold text-blue-900 mb-6">R$149<span class="text-lg font-normal text-gray-500">/mês</span></div>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Recomendações Buy/Hold/Sell</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Análise de até 200 ativos</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>5 Carteiras personalizadas</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Análise de sentimento</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Alertas em tempo real</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="block text-center px-6 py-3 cta-button text-white rounded-lg font-semibold">Começar Agora</a>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 px-4 mb-8">
+                    <div class="pricing-card bg-white p-8 h-full rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-2">Profissional</h3>
+                        <p class="text-gray-500 mb-6">Para investidores avançados</p>
+                        <div class="text-4xl font-bold text-blue-900 mb-6">R$299<span class="text-lg font-normal text-gray-500">/mês</span></div>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Acesso a todas as funcionalidades</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Análise ilimitada de ativos</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Carteiras personalizadas ilimitadas</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>Relatórios detalhados semanais</span>
+                            </li>
+                            <li class="flex items-center">
+                                <span class="text-green-500 mr-2"><i class="fas fa-check"></i></span>
+                                <span>API para integração</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="block text-center px-6 py-3 secondary-button text-white rounded-lg font-semibold">Começar Agora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-blue-900 mb-4">Perguntas Frequentes</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Respostas para as dúvidas mais comuns sobre nossa plataforma.
+                </p>
+            </div>
+
+            <div class="max-w-3xl mx-auto">
+                <div class="faq-item py-6">
+                    <h3 class="text-xl font-semibold mb-2">Como a IA faz recomendações de investimento?</h3>
+                    <p class="text-gray-600">
+                        Nossa IA utiliza múltiplos modelos de aprendizado de máquina que processam dados históricos, indicadores técnicos, demonstrativos financeiros e análises de sentimento para identificar padrões e gerar recomendações. O sistema é constantemente treinado e aperfeiçoado com novos dados.
+                    </p>
+                </div>
+
+                <div class="faq-item py-6">
+                    <h3 class="text-xl font-semibold mb-2">Qual a precisão das recomendações?</h3>
+                    <p class="text-gray-600">
+                        Historicamente, nossas recomendações têm uma precisão média de 94% quando avaliadas em um horizonte de 30 dias. Publicamos mensalmente um relatório transparente com o desempenho das recomendações para todos os usuários.
+                    </p>
+                </div>
+
+                <div class="faq-item py-6">
+                    <h3 class="text-xl font-semibold mb-2">É necessário conhecimento avançado para usar a plataforma?</h3>
+                    <p class="text-gray-600">
+                        Não. A plataforma foi desenhada para ser intuitiva e acessível a todos os níveis de experiência. Para investidores iniciantes, fornecemos explicações detalhadas de cada recomendação e guias educativos sobre conceitos financeiros.
+                    </p>
+                </div>
+
+                <div class="faq-item py-6">
+                    <h3 class="text-xl font-semibold mb-2">Como é feita a análise de sentimento do mercado?</h3>
+                    <p class="text-gray-600">
+                        Nossos algoritmos processam milhares de notícias, posts em redes sociais e fóruns financeiros em tempo real, utilizando processamento de linguagem natural para identificar o tom e contexto das discussões sobre ativos financeiros e o mercado em geral.
+                    </p>
+                </div>
+
+                <div class="faq-item py-6">
+                    <h3 class="text-xl font-semibold mb-2">Posso cancelar minha assinatura a qualquer momento?</h3>
+                    <p class="text-gray-600">
+                        Sim, você pode cancelar sua assinatura a qualquer momento sem taxas adicionais. O serviço continuará disponível até o final do período pago.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 gradient-bg text-white">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">Pronto para revolucionar seus investimentos?</h2>
+            <p class="text-xl opacity-80 max-w-3xl mx-auto mb-10">
+                Junte-se a milhares de investidores que já estão obtendo resultados superiores com nossa tecnologia de IA.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <a href="#" class="cta-button px-8 py-4 text-white font-semibold rounded-lg text-center">
+                    Experimente Grátis por 7 Dias
+                </a>
+                <a href="#" class="bg-white bg-opacity-20 px-8 py-4 text-white font-semibold rounded-lg text-center hover:bg-opacity-30 transition">
+                    Solicitar Demonstração
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-blue-900 text-white pt-16 pb-6">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-wrap">
+                <div class="w-full md:w-1/4 mb-10">
+                    <div class="text-2xl font-bold mb-6">AI<span class="text-green-400">Invest</span>Advisor</div>
+                    <p class="text-blue-200 mb-6">
+                        Transformando investimentos com a mais avançada inteligência artificial do mercado.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/4 mb-10">
+                    <h3 class="text-lg font-semibold mb-6">Funcionalidades</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-blue-200 hover:text-white">Recomendações de Investimento</a></li>
+                        <li><a href="#" class="text-blue-200 hover:text-white">Análise de Sentimento</a></li>
+                        <li><a href="#" class="text-blue-200 hover:text-white">Carteiras Personalizadas</a></li>
+                        <li><a href="#" class="text-blue-200 hover:text-white">Alertas em Tempo Real</a></li>
+                    </ul>
+                </div>
+                <div class="w-full md:w-1/4 mb-10">
+                    <h3 class="text-lg font-semibold mb-6">Empresa</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-blue-200 hover:text-white">Sobre Nós</a></li>
+                        <li><a href="#" class="text-blue-200 hover:text-white">Blog</a></li>
+                        <li><a href="#" class="text-blue-200 hover:text-white">Carreiras</a></li>
+                        <li><a href="#" class="text-blue-200 hover:text-white">Contato</a></li>
+                    </ul>
+                </div>
+                <div class="w-full md:w-1/4 mb-10">
+                    <h3 class="text-lg font-semibold mb-6">Contato</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <i class="fas fa-envelope mt-1 mr-2"></i>
+                            <span>contato@aiinvestadvisor.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-phone mt-1 mr-2"></i>
+                            <span>+55 (11) 4002-8922</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-map-marker-alt mt-1 mr-2"></i>
+                            <span>Av. Paulista, 1000 - São Paulo, SP</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-blue-800 mt-10 pt-6 flex flex-col md:flex-row justify-between">
+                <p class="text-blue-200 text-sm">© 2025 AIInvestAdvisor. Todos os direitos reservados.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="text-blue-200 hover:text-white text-sm">Termos de Uso</a>
+                    <a href="#" class="text-blue-200 hover:text-white text-sm">Política de Privacidade</a>
+                    <a href="#" class="text-blue-200 hover:text-white text-sm">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Chart.js configurations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hero Chart
+            const heroChartCtx = document.getElementById('heroChart').getContext('2d');
+            const heroChart = new Chart(heroChartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'AIInvestAdvisor',
+                        data: [10000, 10800, 11500, 11700, 12800, 12500, 13500, 14200, 15100, 16200, 17400, 18900],
+                        backgroundColor: 'rgba(2, 195, 154, 0.1)',
+                        borderColor: '#02C39A',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#02C39A',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Ibovespa',
+                        data: [10000, 10400, 10800, 10600, 10900, 10700, 11200, 11500, 11800, 12400, 12800, 13200],
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.6)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Buy/Hold/Sell Chart
+            const buyHoldSellChartCtx = document.getElementById('buyHoldSellChart').getContext('2d');
+            const buyHoldSellChart = new Chart(buyHoldSellChartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    datasets: [{
+                        label: 'PETR4',
+                        data: [26.5, 27.8, 28.2, 29.5, 28.9, 25.4, 24.2, 27.1],
+                        backgroundColor: 'rgba(26, 95, 180, 0.1)',
+                        borderColor: '#1A5FB4',
+                        borderWidth: 2,
+                        pointBackgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            const value = context.dataset.data[index];
+                            const prevValue = index > 0 ? context.dataset.data[index - 1] : null;
+                            
+                            if (index === 1) return '#02C39A'; // Buy
+                            if (index === 5) return '#E63946'; // Sell
+                            return '#1A5FB4'; // Default
+                        },
+                        pointRadius: function(context) {
+                            const index = context.dataIndex;
+                            if (index === 1 || index === 5) return 8;
+                            return 4;
+                        },
+                        pointStyle: function(context) {
+                            const index = context.dataIndex;
+                            if (index === 1 || index === 5) return 'rectRot';
+                            return 'circle';
+                        },
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const index = tooltipItems[0].dataIndex;
+                                    if (index === 1) return 'COMPRA - PETR4';
+                                    if (index === 5) return 'VENDA - PETR4';
+                                    return 'PETR4';
+                                },
+                                afterLabel: function(tooltipItem) {
+                                    const index = tooltipItem.dataIndex;
+                                    if (index === 1) return 'Recomendação: COMPRA\nMotivo: Forte potencial de alta após balanço positivo';
+                                    if (index === 5) return 'Recomendação: VENDA\nMotivo: Queda projetada por análise técnica';
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Preço (R$)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Portfolio Chart
+            const portfolioChartCtx = document.getElementById('portfolioChart').getContext('2d');
+            const portfolioChart = new Chart(portfolioChartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Carteira Recomendada',
+                        data: [100, 106, 112, 109, 115, 122, 128, 127, 135, 142, 148, 156],
+                        backgroundColor: 'rgba(2, 195, 154, 0.1)',
+                        borderColor: '#02C39A',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'CDI',
+                        data: [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111],
+                        borderColor: '#94A3B8',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    }, {
+                        label: 'Ibovespa',
+                        data: [100, 103, 108, 105, 111, 109, 115, 119, 123, 128, 132, 138],
+                        borderColor: '#1A5FB4',
+                        borderWidth: 2,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Retorno (%)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Create Sentiment Heat Map
+            const sentimentMap = document.getElementById('sentimentMap');
+            const sectors = ['Tecnologia', 'Financeiro', 'Energia', 'Varejo', 'Saúde'];
+            const regions = ['Brasil', 'EUA', 'Europa', 'Ásia', 'América Latina'];
+            
+            // Values between 0 (negative) and 1 (positive)
+            const sentimentData = [
+                [0.85, 0.67, 0.42, 0.76, 0.58],  // Technology
+                [0.60, 0.75, 0.68, 0.52, 0.63],  // Financial
+                [0.35, 0.43, 0.28, 0.72, 0.45],  // Energy
+                [0.72, 0.81, 0.67, 0.49, 0.55],  // Retail
+                [0.91, 0.86, 0.78, 0.60, 0.74]   // Healthcare
+            ];
+
+            // Clear any existing content
+            sentimentMap.innerHTML = '';
+
+            // Create header row with region names
+            const headerRow = document.createElement('div');
+            headerRow.className = 'sentiment-row font-semibold bg-gray-50';
+            headerRow.style.height = '40px';
+            
+            // Empty first cell for alignment
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'flex items-center justify-center';
+            emptyCell.style.width = '80px';
+            emptyCell.style.minWidth = '80px';
+            headerRow.appendChild(emptyCell);
+            
+            // Add region names
+            regions.forEach(region => {
+                const regionCell = document.createElement('div');
+                regionCell.className = 'flex items-center justify-center';
+                regionCell.textContent = region;
+                headerRow.appendChild(regionCell);
+            });
+            sentimentMap.appendChild(headerRow);
+
+            // Create rows for each sector
+            sectors.forEach((sector, rowIndex) => {
+                const row = document.createElement('div');
+                row.className = 'sentiment-row';
+                
+                // Add sector name
+                const sectorCell = document.createElement('div');
+                sectorCell.className = 'flex items-center p-2 font-semibold';
+                sectorCell.style.width = '80px';
+                sectorCell.style.minWidth = '80px';
+                sectorCell.style.backgroundColor = '#f8fafc';
+                sectorCell.textContent = sector;
+                row.appendChild(sectorCell);
+                
+                // Add sentiment cells
+                sentimentData[rowIndex].forEach((value, colIndex) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'sentiment-cell flex items-center justify-center font-semibold';
+                    
+                    // Determine color based on sentiment value
+                    const red = Math.round(230 * (1 - value));
+                    const green = Math.round(195 * value);
+                    const blue = Math.round(70 * (1 - Math.abs(value - 0.5) * 2));
+                    
+                    cell.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+                    cell.style.color = value > 0.5 ? 'white' : '#333';
+                    
+                    // Display percentage
+                    cell.textContent = Math.round(value * 100) + '%';
+                    
+                    // Add tooltip with more info
+                    cell.title = `${sector} - ${regions[colIndex]}: ${Math.round(value * 100)}% positivo`;
+                    
+                    row.appendChild(cell);
+                });
+                
+                sentimentMap.appendChild(row);
+            });
+        });
+    </script>
+</body>
+</html>

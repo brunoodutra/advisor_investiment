@@ -1,0 +1,9 @@
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/.env
+backend/Trade_Bot/logs/
+backend/Trade_Bot/data/
+backend/AI/Classification/Real_Time_Inference/Recommendations/

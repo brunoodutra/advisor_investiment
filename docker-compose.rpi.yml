@@ -1,0 +1,8 @@
+services:
+  inference:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.inference.tflite
+    environment:
+      MODEL_BACKEND: tflite
+      TFLITE_MODEL_DIR: /app/backend/AI/Classification/Experiments/Cryptos/models

@@ -1,0 +1,94 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:                       # ← ADICIONAR ESTE BLOCO
+      - ./frontend/:/usr/share/nginx/html/:ro
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/API:/app/backend/API
+      - ./backend/AI/Classification/Real_Time_Inference/Recommendations:/app/backend/AI/Classification/Real_Time_Inference/Recommendations
+      - ./backend/Trade_Bot/data:/app/backend/Trade_Bot/data
+      - ./backend/API/cache:/app/backend/API/cache
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-}
+      TRADE_BOT_API_TOKEN: ${TRADE_BOT_API_TOKEN:-}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  inference:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.inference.tf
+    volumes:
+      - ./backend/AI/Classification/Real_Time_Inference/Recommendations:/app/backend/AI/Classification/Real_Time_Inference/Recommendations
+    restart: unless-stopped
+
+  trade_bot:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-u", "Trade_Bot/run_bot.py"]
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./backend/Trade_Bot/src:/app/backend/Trade_Bot/src
+      - ./backend/Trade_Bot/data:/app/backend/Trade_Bot/data
+      - ./backend/Trade_Bot/logs:/app/backend/Trade_Bot/logs
+    environment:
+      RECOMMENDATION_API_URL: http://api:8000
+      RECOMMENDATION_MODEL_NAME: ${RECOMMENDATION_MODEL_NAME:-CNN}
+      API_TIMEOUT_SECONDS: ${API_TIMEOUT_SECONDS:-30}
+      BINANCE_API_KEY: ${BINANCE_API_KEY:-}
+      BINANCE_SECRET_KEY: ${BINANCE_SECRET_KEY:-}
+      BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
+      EXCHANGE: ${EXCHANGE:-binance}
+      MARKET_MODE: ${MARKET_MODE:-FUTURES}
+      MARKET_TYPE: ${MARKET_MODE:-FUTURES}
+      TRADING_MODE: ${TRADING_MODE:-PAPER}
+      PAPER_BALANCE: ${PAPER_BALANCE:-1000}
+      TRADE_BOT_API_TOKEN: ${TRADE_BOT_API_TOKEN:-}
+    profiles: ["bot"]
+    restart: unless-stopped
+
+  llms_notebook:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.notebook
+    working_dir: /workspace/backend/LLM_chat
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=", "--NotebookApp.password="]
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - ./:/workspace
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+    profiles: ["notebook"]
+    restart: unless-stopped

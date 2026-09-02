@@ -1,0 +1,51 @@
+# ==============================================================================
+# Configurações Padrão (Defaults) do Trade Bot
+# Este arquivo atua como a Única Fonte da Verdade (Single Source of Truth) para
+# valores padrão e fallback do robô de trading.
+#
+# Alterações dinâmicas em tempo de execução são salvas em:
+# backend/Trade_Bot/data/bot_config.json
+# ==============================================================================
+
+bot:
+  # Estado inicial caso bot_config.json não exista: 'paused' | 'running'
+  status: "paused"
+  
+  # Perfil de alvo/stop da inferência: conservative | moderate | aggressive
+  risk_profile: "moderate"
+
+  # Confiança mínima do modelo de IA (0.0 a 1.0) para aceitar um sinal
+  confidence_threshold: 0.60
+  
+  # Percentual do capital efetivo arriscado por operação (0.015 = 1.5%)
+  risk_per_trade: 0.015
+  
+  # Alavancagem no mercado de futuros (ex: 10x)
+  leverage: 10
+  
+  # Frequência do log de P&L total (em ciclos)
+  pnl_log_interval: 1
+
+allocation:
+  # Limite padrão em USDT por criptomoeda (caso o par não esteja listado abaixo)
+  default_crypto_limit: 100.0
+  
+  # Teto máximo de capital em USDT por par
+  max_allocation_per_crypto:
+    BTCUSDT: 250.0
+    ETHUSDT: 200.0
+    SOLUSDT: 150.0
+    XRPUSDT: 100.0
+    ADAUSDT: 100.0
+
+market:
+  # Lista de pares monitorados
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+    - "XRPUSDT"
+    - "SOLUSDT"
+    - "ADAUSDT"
+  
+  # Timeframe padrão das análises
+  timeframe: "4h"

@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pandas
+joblib
+python-dotenv
+pyyaml
+pydantic
+requests
+langchain-core
+langchain-groq
+langchain-ollama
+

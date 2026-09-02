@@ -1,0 +1,31 @@
+renderCryptoCards chamado com viewMode: cards
+2ui.js:646 Recommendations preloaded successfully
+ui.js:571 🔄 Toggle view mode chamado, modo atual: cards
+ui.js:575 📊 Novo modo: list
+ui.js:583 📝 Botão atualizado para: Cards
+ui.js:601 💾 Cache data disponível: false dados: false
+ui.js:607 ⚠️ Sem dados no cache, buscando dados...
+ui.js:609 Uncaught ReferenceError: fetchCryptoData is not defined
+    at toggleViewMode (ui.js:609:9)
+    at HTMLButtonElement.<anonymous> (script.js:59:80)
+toggleViewMode @ ui.js:609
+(anonymous) @ script.js:59Understand this error
+ui.js:14 renderCryptoCards chamado com viewMode: list
+ui.js:19 Renderizando modo lista
+ui.js:84 renderCryptoList chamado com 5 itens
+ui.js:167 loadRecommendationForListOptimized para bitcoin
+ui.js:184 Cache key: recommendation_BTC_CNN Recomendação em cache: Sim
+ui.js:185 Cache completo: {fear_greed: {…}, BTC: {…}, SOL: {…}, ETH: {…}, XRP: {…}, …}
+ui.js:167 loadRecommendationForListOptimized para ethereum
+ui.js:184 Cache key: recommendation_ETH_CNN Recomendação em cache: Sim
+ui.js:185 Cache completo: {fear_greed: {…}, BTC: {…}, SOL: {…}, ETH: {…}, XRP: {…}, …}
+ui.js:167 loadRecommendationForListOptimized para solana
+ui.js:184 Cache key: recommendation_SOL_CNN Recomendação em cache: Sim
+ui.js:185 Cache completo: {fear_greed: {…}, BTC: {…}, SOL: {…}, ETH: {…}, XRP: {…}, …}
+ui.js:167 loadRecommendationForListOptimized para cardano
+ui.js:184 Cache key: recommendation_ADA_CNN Recomendação em cache: Sim
+ui.js:185 Cache completo: {fear_greed: {…}, BTC: {…}, SOL: {…}, ETH: {…}, XRP: {…}, …}
+ui.js:167 loadRecommendationForListOptimized para ripple
+ui.js:184 Cache key: recommendation_XRP_CNN Recomendação em cache: Sim
+ui.js:185 Cache completo: {fear_greed: {…}, BTC: {…}, SOL: {…}, ETH: {…}, XRP: {…}, …}
+ui.js:646 Recommendations preloaded successfully

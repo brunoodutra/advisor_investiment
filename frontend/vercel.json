@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/reco/[...path].js": {
+      "maxDuration": 10
+    }
+  }
+}
+

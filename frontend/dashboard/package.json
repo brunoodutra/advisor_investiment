@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "icons:fetch": "node scripts/fetch-icons.js"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

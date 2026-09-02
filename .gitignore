@@ -1,0 +1,46 @@
+# Environment & secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local frontend config (Supabase keys)
+frontend/dashboard/supabase.local.js
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.ipynb_checkpoints/
+
+# Node
+**/node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Logs
+**/*.log
+backend/Trade_Bot/logs/
+
+# Runtime data & cache
+**/*.csv
+backend/API/cache/*
+!backend/API/cache/.gitignore
+backend/Trade_Bot/data/*.json
+backend/AI/Classification/Real_Time_Inference/Recommendations/
+
+# ML models & training artifacts
+**/*.tflite
+backend/AI/Classification/Experiments/Cryptos/models/
+
+# IDE, OS & tooling
+.DS_Store
+.vscode/
+.idea/
+.trae/
+**/.vercel/
+
+# Misc
+*.trae
