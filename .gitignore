@@ -14,6 +14,9 @@ frontend/dashboard/supabase.local.js
 **/.ruff_cache/
 **/.ipynb_checkpoints/
 
+# Python virtualenv (Cloud Agent dev environment)
+.venv/
+
 # Node
 **/node_modules/
 npm-debug.log*
