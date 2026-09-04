@@ -1,0 +1,20 @@
+{
+  "name": "advisor_investiment",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "api",
+      "description": "FastAPI backend (recommendations, sentiment, chat, trade-bot state) on port 8000. Docs at /docs.",
+      "command": "cd backend && PYTHONPATH=/workspace/backend /workspace/.venv/bin/uvicorn API.API_setup:app --host 0.0.0.0 --port 8000 --reload"
+    },
+    {
+      "name": "frontend",
+      "description": "Static site + dashboard (Nginx-equivalent) served on port 8080. Dashboard at /dashboard/.",
+      "command": "cd frontend && /workspace/.venv/bin/python -m http.server 8080"
+    }
+  ],
+  "ports": [
+    { "name": "api", "port": 8000 },
+    { "name": "frontend", "port": 8080 }
+  ]
+}
