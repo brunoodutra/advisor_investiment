@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trade Bot — prévias de direção (preview-only)</title>
+  <style>
+    :root {
+      --bg: #0e0f10;
+      --panel: #17191c;
+      --ink: #f2ede4;
+      --muted: #9a958a;
+      --line: #2a2d31;
+      --accent: #e8b931;
+      --ok: #3fa34d;
+      --danger: #c0392b;
+      --blue: #6b9ae6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    header {
+      padding: 2rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--line);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.55rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p { margin: 0.25rem 0; color: var(--muted); max-width: 62ch; }
+    .note {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-left: 3px solid var(--accent);
+      font-size: 0.92rem;
+    }
+    .note strong { color: var(--ink); }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 3rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+    article {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .meta {
+      padding: 1rem 1.15rem 0.85rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .kicker {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .feel { color: var(--muted); font-size: 0.95rem; }
+    .swatches { display: flex; gap: 0.35rem; margin-top: 0.35rem; }
+    .swatches span {
+      width: 1rem; height: 1rem;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    figure { margin: 0; }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #000;
+      border-top: 1px solid var(--line);
+    }
+    figcaption {
+      padding: 0.65rem 1.15rem 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: ui-monospace, "IBM Plex Mono", monospace;
+    }
+    footer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem 2.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    footer code {
+      color: var(--ink);
+      font-size: 0.85em;
+    }
+    .choices {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+    .choices span {
+      border: 1px solid var(--line);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.85rem;
+      background: #121418;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Trade Bot — prévias de direção</h1>
+    <p>Artefato só de preview (não altera a página live). Status + risco aberto no 1º viewport; sem densidade Bloomberg e sem SaaS vazio. HMI industrial atual permanece no código até você escolher.</p>
+    <div class="note">
+      <strong>HMI atual vs reverter:</strong> o que está no dashboard hoje é o HMI industrial / E-stop (já aplicado). Escolher <em>reverter HMI</em> = voltar ao visual pré-HMI (cards/KPI polidos da categoria), equivalente ao look antigo — não é uma 4ª direção nova.
+    </div>
+  </header>
+
+  <main>
+    <article id="sbb">
+      <div class="meta">
+        <div class="kicker">Opção 1 · assigned</div>
+        <h2>Painel SBB à noite</h2>
+        <p class="feel">Andén noturno: lâmpadas de estado, faixa-horário de KPIs, P&amp;L Aberto como cartaz.</p>
+        <div class="swatches" aria-hidden="true">
+          <span style="background:#121418"></span>
+          <span style="background:#E8B931"></span>
+          <span style="background:#3FA34D"></span>
+          <span style="background:#C0392B"></span>
+          <span style="background:#F2EDE4"></span>
+        </div>
+      </div>
+      <figure>
+        <img src="../mocks/preview/trade-bot-01-sbb-noite.png" alt="Mockup Trade Bot — Painel SBB à noite" width="1920" height="1080" />
+        <figcaption>.impeccable/mocks/preview/trade-bot-01-sbb-noite.png</figcaption>
+      </figure>
+    </article>
+
+    <article id="trilho">
+      <div class="meta">
+        <div class="kicker">Opção 2 · challenger</div>
+        <h2>Trilho de linhas de emissão</h2>
+        <p class="feel">Instrumento científico: tudo pendurado num trilho espectral; P&amp;L numa placa; Ligar/Fechar em sódio.</p>
+        <div class="swatches" aria-hidden="true">
+          <span style="background:#2A2A28"></span>
+          <span style="background:#C8C2B4"></span>
+          <span style="background:#F0C547"></span>
+          <span style="background:#6B9AE6"></span>
+          <span style="background:#C44B4B"></span>
+        </div>
+      </div>
+      <figure>
+        <img src="../mocks/preview/trade-bot-02-trilho-emissao.png" alt="Mockup Trade Bot — Trilho de linhas de emissão" width="1920" height="1080" />
+        <figcaption>.impeccable/mocks/preview/trade-bot-02-trilho-emissao.png</figcaption>
+      </figure>
+    </article>
+
+    <article id="canon">
+      <div class="meta">
+        <div class="kicker">Opção 3 · canon</div>
+        <h2>Dashboard cripto padrão</h2>
+        <p class="feel">Categoria polida: cards KPI iguais, glow suave, botões padrão — o look “todo bot dashboard”.</p>
+        <div class="swatches" aria-hidden="true">
+          <span style="background:#0F172A"></span>
+          <span style="background:#3B82F6"></span>
+          <span style="background:#22C55E"></span>
+          <span style="background:#F8FAFC"></span>
+        </div>
+      </div>
+      <figure>
+        <img src="../mocks/preview/trade-bot-03-canon-cripto.png" alt="Mockup Trade Bot — Dashboard cripto padrão" width="1920" height="1080" />
+        <figcaption>.impeccable/mocks/preview/trade-bot-03-canon-cripto.png</figcaption>
+      </figure>
+    </article>
+  </main>
+
+  <footer>
+    <p>Abrir esta página no browser (file://) ou as PNGs acima. Nenhuma mudança de produção foi feita.</p>
+    <p>Escolha:</p>
+    <div class="choices">
+      <span>SBB</span>
+      <span>trilho</span>
+      <span>canon</span>
+      <span>safer-reroll</span>
+      <span>bolder-reroll</span>
+      <span>reverter HMI</span>
+    </div>
+  </footer>
+</body>
+</html>

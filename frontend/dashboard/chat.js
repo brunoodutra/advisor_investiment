@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js?v=20260828a';
 import { state } from './state.js?v=20260828a';
-import { showNotification } from './ui.js?v=20260828a';
+import { showNotification } from './ui.js?v=20260905hard';
 import { tradeBotAuthHeaders } from './api.js?v=20260828a';
 
 const STORAGE_KEYS = {

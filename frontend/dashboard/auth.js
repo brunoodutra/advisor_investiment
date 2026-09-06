@@ -1,5 +1,5 @@
 import { state } from './state.js?v=20260828a';
-import { showPage } from './ui.js?v=20260828a';
+import { showPage } from './ui.js?v=20260905hard';
 import { clearSupabaseConfig, getSupabaseConfig, setSupabaseConfig } from './supabaseRuntimeConfig.js?v=20260828a';
 
 let supabase = null;

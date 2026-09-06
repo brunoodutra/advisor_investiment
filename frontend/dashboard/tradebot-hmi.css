@@ -1,0 +1,1026 @@
+/* Trade Bot — operator desk on the CryptoDash night world. Scoped so the rest of CryptoDash stays intact. */
+/* Committed direction: DESIGN.md "Trade Bot Operator Desk" — flat panels, 1px hairlines, radius 0, */
+/* Sora for UI, IBM Plex Mono for money/times. Color only for P&L sign, BUY/SELL legs, run/pause/error */
+/* status, and the operating-mode badge. */
+
+#trade-bot-page {
+    --tb-ground: #0d1117;
+    --tb-panel: #161b22;
+    --tb-panel-2: #1c2128;
+    --tb-bezel: var(--tb-panel);
+    --tb-well: var(--tb-ground);
+    --tb-legend: #8b949e;
+    --tb-ink: #f0f3f6;
+    --tb-muted: #8b949e;
+    --tb-run: #238636;
+    --tb-run-hi: #3fb950;
+    --tb-estop: #da3633;
+    --tb-estop-hi: #f85149;
+    --tb-caution: #d29922;
+    --tb-hair: #30363d;
+    --tb-focus: #58a6ff;
+    --tb-sans: "Sora", system-ui, sans-serif;
+    --tb-mono: "IBM Plex Mono", ui-monospace, monospace;
+    color-scheme: dark;
+    background: var(--tb-ground);
+    color: var(--tb-ink);
+    font-family: var(--tb-sans);
+    font-size: 1rem;
+    line-height: 1.35;
+}
+
+#trade-bot-page ::selection {
+    background: rgba(88, 166, 255, 0.35);
+    color: var(--tb-ink);
+}
+
+#trade-bot-page {
+    scrollbar-color: var(--tb-hair) var(--tb-ground);
+}
+
+#trade-bot-page :focus-visible {
+    outline: 2px solid var(--tb-focus);
+    outline-offset: 2px;
+}
+
+.tb-hmi {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1rem 1.25rem 2.5rem;
+}
+
+/* ----- Command fascia: slim flat status bar ----- */
+.tb-fascia {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem 1.25rem;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    background: var(--tb-panel);
+    border: 1px solid var(--tb-hair);
+}
+
+.tb-fascia__ident {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.tb-fascia__copy { min-width: 0; }
+
+.tb-fascia__title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.tb-fascia__name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--tb-ink);
+}
+
+.tb-fascia__via,
+.tb-fascia__meta {
+    margin: 0.15rem 0 0;
+    font-size: 0.78rem;
+    color: var(--tb-legend);
+}
+
+.tb-fascia__meta {
+    font-family: var(--tb-mono);
+    font-size: 0.72rem;
+    color: var(--tb-muted);
+}
+
+.tb-fascia__keys {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Status tile: flat square + state dot (no lamp costume, no glow) */
+.tb-lamp {
+    width: 40px;
+    height: 40px;
+    border-radius: 0;
+    background: var(--tb-panel-2);
+    border: 1px solid var(--tb-hair);
+    box-shadow: none;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.tb-lamp__lens {
+    width: 10px;
+    height: 10px;
+    border-radius: 1px;
+    background: var(--tb-muted);
+    transition: background 180ms ease-out;
+}
+
+.tb-lamp--offline .tb-lamp__lens { background: var(--tb-muted); }
+.tb-lamp--running .tb-lamp__lens { background: var(--tb-run-hi); }
+.tb-lamp--paused .tb-lamp__lens { background: var(--tb-caution); }
+.tb-lamp--error .tb-lamp__lens { background: var(--tb-estop-hi); }
+
+#trade-bot-page .tb-status-pill {
+    padding: 0.1rem 0.45rem;
+    border: 1px solid currentColor;
+    border-radius: 0;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: transparent;
+}
+
+#trade-bot-page .tb-status-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 1px;
+}
+
+#trade-bot-page .tb-status--offline { color: var(--tb-muted); }
+#trade-bot-page .tb-status--running { color: var(--tb-run-hi); }
+#trade-bot-page .tb-status--paused { color: var(--tb-caution); }
+#trade-bot-page .tb-status--error { color: var(--tb-estop-hi); }
+#trade-bot-page .tb-status--running .tb-status-dot { animation: none; box-shadow: none; background: var(--tb-run-hi); }
+
+/* Keys: flat, 1px hairline, radius 0 */
+.tb-key {
+    font-family: var(--tb-sans);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 0;
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1px solid var(--tb-hair);
+    line-height: 1.1;
+    transition: background 120ms ease-out, border-color 120ms ease-out, filter 120ms ease-out;
+}
+
+.tb-key:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.tb-key--aux {
+    background: var(--tb-panel-2);
+    color: var(--tb-legend);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.75rem;
+}
+
+.tb-key--aux:hover:not(:disabled) { color: var(--tb-ink); border-color: var(--tb-muted); }
+
+.tb-key--aux:active:not(:disabled) { background: var(--tb-ground); }
+
+.tb-key--sm { padding: 0.35rem 0.6rem; font-size: 0.7rem; }
+
+.tb-key--run {
+    background: var(--tb-run);
+    border-color: rgba(240, 246, 252, 0.12);
+    color: #f0f3f6;
+    min-width: 8.5rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.82rem;
+}
+
+.tb-key--run:hover:not(:disabled) { filter: brightness(1.08); }
+
+.tb-key--run:active:not(:disabled),
+.tb-key--run[aria-pressed="true"] {
+    filter: brightness(0.92);
+}
+
+/* E-stop as a flat danger key with a stop square, not a mushroom */
+.tb-key--estop {
+    flex-direction: row;
+    gap: 0.45rem;
+    background: var(--tb-estop);
+    border: 1px solid rgba(240, 246, 252, 0.12);
+    padding: 0.7rem 1rem;
+    min-width: 0;
+    color: #f0f3f6;
+}
+
+.tb-key--estop:hover:not(:disabled) { filter: brightness(1.08); }
+
+.tb-key--estop:active:not(:disabled) { filter: brightness(0.92); }
+
+.tb-estop-head {
+    width: 10px;
+    height: 10px;
+    border-radius: 1px;
+    background: currentColor;
+    border: 0;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+
+.tb-estop-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: inherit;
+}
+
+/* KPI strip: horizontal, compacta, hairline grid */
+.tb-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0;
+    margin-top: 0;
+    border: 1px solid var(--tb-hair);
+    border-top: 0;
+    background: var(--tb-ground);
+}
+
+.tb-kpi-strip .tb-readout {
+    border-bottom: 0;
+    border-right: 1px solid var(--tb-hair);
+    padding: 0.55rem 0.75rem;
+}
+
+.tb-kpi-strip .tb-readout:last-child { border-right: 0; }
+
+.tb-kpi-strip .tb-readout--lead {
+    background: var(--tb-panel);
+    padding: 0.6rem 0.75rem;
+}
+
+.tb-kpi-strip .tb-readout--lead .tb-readout__value {
+    font-size: 1.35rem;
+}
+
+/* Main: abertos + últimos trades */
+.tb-main {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.tb-main__open,
+.tb-main__side {
+    min-width: 0;
+}
+
+.tb-main__side {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tb-well--flush {
+    padding: 0.65rem;
+}
+
+.tb-well--detail {
+    flex: 1;
+}
+
+/* Recent trades list */
+.tb-recent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.tb-recent__item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.45rem 0.55rem;
+    background: var(--tb-ground);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    cursor: pointer;
+}
+
+.tb-recent__item:hover {
+    border-color: var(--tb-muted);
+    background: var(--tb-panel-2);
+}
+
+.tb-recent__sym {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--tb-ink);
+}
+
+.tb-recent__meta {
+    font-size: 0.6875rem;
+    color: var(--tb-muted);
+    font-family: var(--tb-mono);
+}
+
+.tb-recent__pnl {
+    text-align: right;
+    font-family: var(--tb-mono);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.tb-recent__pnl-pct {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.tb-recent__reason {
+    font-size: 0.6875rem;
+    color: var(--tb-legend);
+    margin-top: 0.1rem;
+}
+
+.tb-readout {
+    padding: 0.45rem 0.75rem 0.5rem;
+    border-bottom: 1px solid var(--tb-hair);
+}
+
+.tb-readout__tag {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--tb-muted);
+    margin-bottom: 0.1rem;
+}
+
+.tb-readout__value {
+    font-family: var(--tb-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--tb-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.tb-readout__sub {
+    font-family: var(--tb-mono);
+    font-size: 0.6875rem;
+    color: var(--tb-legend);
+    margin-top: 0.05rem;
+}
+
+.tb-readout--lead {
+    padding: 0.7rem 0.85rem;
+    background: var(--tb-panel);
+}
+
+.tb-readout--lead .tb-readout__value {
+    font-size: 1.7rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.tb-display__legend { display: flex; gap: 0.85rem; }
+
+.tb-leg {
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tb-legend);
+}
+
+.tb-leg--eq::before,
+.tb-leg--pk::before {
+    content: "";
+    display: inline-block;
+    width: 0.55rem;
+    height: 2px;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+}
+
+.tb-leg--eq::before { background: var(--tb-run-hi); }
+.tb-leg--pk::before { background: var(--tb-legend); }
+
+#trade-bot-page #trade-bot-cumulative-chart {
+    width: 100% !important;
+    height: 240px !important;
+    max-height: 260px !important;
+}
+
+/* Recipe pages (tabs) */
+.tb-recipes {
+    margin-top: 1rem;
+}
+
+/* Esconde a seção principal quando a aba "open" está ativa (ela já mostra o roster) */
+#trade-bot-page[data-active-tab="open"] .tb-main {
+    display: none;
+}
+
+#trade-bot-page .tb-tabs-nav {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    background: var(--tb-panel);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    margin-bottom: 0;
+    overflow-x: auto;
+}
+
+#trade-bot-page .tb-tab {
+    flex: 1 1 auto;
+    min-width: max-content;
+    padding: 0.65rem 0.9rem;
+    border: 0;
+    border-right: 1px solid var(--tb-hair);
+    border-radius: 0;
+    background: transparent;
+    color: var(--tb-legend);
+    font-family: var(--tb-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+#trade-bot-page .tb-tab:hover { background: var(--tb-panel-2); color: var(--tb-ink); }
+
+#trade-bot-page .tb-tab.active {
+    background: var(--tb-ground);
+    color: var(--tb-ink);
+    box-shadow: inset 0 2px 0 var(--tb-focus);
+}
+
+#trade-bot-page .tb-tab-count {
+    border-radius: 0;
+    background: var(--tb-panel-2);
+    border: 1px solid var(--tb-hair);
+    color: var(--tb-legend);
+    min-width: 1.1rem;
+    height: 1.1rem;
+    font-size: 0.6875rem;
+}
+
+#trade-bot-page .tb-tab-panel { animation: none; }
+#trade-bot-page .tb-tab-panel.active {
+    background: var(--tb-ground);
+    border: 1px solid var(--tb-hair);
+    border-top: 0;
+    padding: 0.85rem;
+}
+
+.tb-recipe-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1rem;
+}
+
+.tb-recipe-grid--2 { grid-template-columns: 1fr 1fr; }
+
+.tb-recipe-grid .tb-well:last-child { grid-column: 1 / -1; }
+
+.tb-open-layout {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 1rem;
+}
+
+.tb-well {
+    background: var(--tb-panel);
+    border: 1px solid var(--tb-hair);
+    padding: 0.9rem 1rem 1rem;
+}
+
+.tb-well__title {
+    margin: 0 0 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tb-muted);
+}
+
+.tb-well__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+}
+
+.tb-well__head .tb-well__title { margin: 0; }
+
+.tb-well__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.tb-well__stamp {
+    font-family: var(--tb-mono);
+    font-size: 0.7rem;
+    color: var(--tb-legend);
+}
+
+.tb-empty {
+    margin: 0;
+    padding: 1.5rem 0.75rem;
+    text-align: center;
+    color: var(--tb-legend);
+    font-size: 0.85rem;
+    max-width: 42ch;
+    margin-inline: auto;
+}
+
+#trade-bot-page .tb-input {
+    background: var(--tb-ground);
+    color: var(--tb-ink);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    font-family: var(--tb-sans);
+}
+
+#trade-bot-page .tb-input:focus {
+    border-color: var(--tb-focus);
+    box-shadow: none;
+}
+
+#trade-bot-page .tb-table-wrap {
+    border-radius: 0;
+    background: var(--tb-ground);
+    border-color: var(--tb-hair);
+}
+
+#trade-bot-page .tb-open-table thead th,
+#trade-bot-page .tb-hist-table thead th {
+    background: var(--tb-panel-2);
+    color: var(--tb-muted);
+    border-radius: 0;
+    letter-spacing: 0.08em;
+}
+
+#trade-bot-page .tb-open-table tbody tr:hover,
+#trade-bot-page .tb-hist-table tbody tr:hover {
+    background: var(--tb-panel-2);
+}
+
+#trade-bot-page .tb-open-table tbody tr.tb-row-selected {
+    background: rgba(35, 134, 54, 0.12);
+    box-shadow: inset 1px 0 0 var(--tb-run);
+}
+
+#trade-bot-page .tb-side-pill {
+    border-radius: 0;
+}
+
+#trade-bot-page .tb-side-pill.long { color: var(--tb-run-hi); background: rgba(35, 134, 54, 0.13); border-color: rgba(63, 185, 80, 0.3); }
+#trade-bot-page .tb-side-pill.short { color: var(--tb-estop-hi); background: rgba(218, 54, 51, 0.13); border-color: rgba(248, 81, 73, 0.3); }
+
+#trade-bot-page .tb-cycle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+#trade-bot-page .tb-cycle__leg {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    font-family: var(--tb-mono);
+}
+#trade-bot-page .tb-cycle__leg--buy {
+    color: var(--tb-run-hi);
+    background: rgba(35, 134, 54, 0.13);
+    border-color: rgba(63, 185, 80, 0.3);
+}
+#trade-bot-page .tb-cycle__leg--sell {
+    color: var(--tb-estop-hi);
+    background: rgba(218, 54, 51, 0.13);
+    border-color: rgba(248, 81, 73, 0.3);
+}
+#trade-bot-page .tb-cycle__arrow {
+    color: var(--tb-muted);
+    font-size: 0.75rem;
+}
+#trade-bot-page .tb-cycle__hint {
+    margin-top: 0.15rem;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tb-muted);
+}
+#trade-bot-page .tb-hist-chart-well {
+    margin-bottom: 1rem;
+}
+#trade-bot-page #trade-bot-history-pnl-chart {
+    max-height: 180px;
+}
+
+/* Sparkline por posição */
+#trade-bot-page .tb-sparkline {
+    width: 220px;
+    height: 72px;
+    min-width: 180px;
+    background: var(--tb-ground);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+}
+
+#trade-bot-page .num-up { color: var(--tb-run-hi) !important; }
+#trade-bot-page .num-down { color: var(--tb-estop-hi) !important; }
+#trade-bot-page .num-warn { color: var(--tb-caution) !important; }
+
+#trade-bot-page .tb-tpsl-label { font-size: 0.6875rem; }
+#trade-bot-page .tb-tpsl-dot { box-shadow: 0 0 0 1px var(--tb-hair); }
+
+@media (prefers-reduced-motion: reduce) {
+    #trade-bot-page .tb-key,
+    #trade-bot-page .tb-lamp__lens,
+    #trade-bot-page .tb-tpsl-dot {
+        transition: none;
+    }
+}
+
+.tb-pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    font-family: var(--tb-mono);
+    font-size: 0.75rem;
+    color: var(--tb-legend);
+}
+
+.tb-pager__keys { display: flex; gap: 0.4rem; }
+
+.tb-adv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+}
+
+#trade-bot-page .tb-adv-kpi {
+    background: var(--tb-ground);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+}
+
+#trade-bot-page .tb-adv-kpi__label {
+    color: var(--tb-muted);
+    letter-spacing: 0.08em;
+}
+
+#trade-bot-page .tb-adv-kpi__value {
+    font-family: var(--tb-mono);
+}
+
+#trade-bot-page .tb-timeline::before {
+    background: var(--tb-hair);
+    width: 1px;
+    border-radius: 0;
+}
+
+#trade-bot-page .tb-tl-item::before { border-radius: 1px; }
+#trade-bot-page .tb-tl-body {
+    background: var(--tb-ground);
+    border-radius: 0;
+    color: var(--tb-legend);
+}
+
+#trade-bot-page .tb-heatmap-cell { border-radius: 1px; }
+
+/* Dialogs (body-level: literal committed tokens, vars don't resolve outside the page) */
+#tb-config-modal,
+#tb-trade-detail-modal {
+    background: rgba(1, 4, 9, 0.7);
+    backdrop-filter: none;
+}
+
+#tb-config-modal > div,
+#tb-trade-detail-modal > div {
+    background: #161b22 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 0 !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55) !important;
+    font-family: "Sora", system-ui, sans-serif;
+    color: #f0f3f6;
+}
+
+#tb-config-modal h3,
+#tb-trade-detail-modal h3,
+#tb-config-modal h4 {
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+#tb-cfg-status,
+#tb-cfg-default-limit,
+#tb-cfg-risk,
+#tb-cfg-confidence,
+#tb-cfg-leverage {
+    background: #0d1117 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 0 !important;
+    color: #f0f3f6 !important;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+#tb-cfg-add-crypto-btn,
+#tb-cfg-cancel-btn {
+    background: #1c2128 !important;
+    color: #8b949e !important;
+    border: 1px solid #30363d !important;
+    border-radius: 0 !important;
+}
+
+#tb-cfg-save-btn {
+    background: #238636 !important;
+    border: 1px solid rgba(240, 246, 252, 0.12) !important;
+    border-radius: 0 !important;
+}
+
+#tb-config-modal .tb-crypto-limit-row {
+    background: #0d1117 !important;
+    border-color: #30363d !important;
+    border-radius: 0 !important;
+}
+
+#tb-config-modal .tb-crypto-symbol,
+#tb-config-modal .tb-crypto-limit {
+    background: #161b22 !important;
+    border-color: #30363d !important;
+    border-radius: 0 !important;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+#tb-config-modal input:focus-visible,
+#tb-config-modal select:focus-visible {
+    border-color: #58a6ff !important;
+    outline: none;
+    box-shadow: none;
+}
+
+@media (max-width: 960px) {
+    .tb-fascia {
+        grid-template-columns: 1fr;
+    }
+    .tb-fascia__keys { justify-content: flex-start; flex-wrap: wrap; }
+    .tb-hmi__deck { grid-template-columns: 1fr; }
+    .tb-readouts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-right: 0;
+        border-bottom: 1px solid var(--tb-hair);
+    }
+    .tb-readout--lead { grid-column: span 1; }
+    .tb-recipe-grid,
+    .tb-recipe-grid--2,
+    .tb-open-layout { grid-template-columns: 1fr; }
+    .tb-recipe-grid .tb-well:last-child { grid-column: auto; }
+}
+
+@media (max-width: 640px) {
+    .tb-hmi { padding: 0.65rem 0.65rem 1.75rem; }
+    .tb-readout--lead .tb-readout__value { font-size: 1.35rem; }
+    .tb-key--run { min-width: 0; flex: 1; }
+}
+
+/* ----- Modo de operação (PAPER/REAL · mercado) — sempre visível ----- */
+.tb-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.14rem 0.5rem;
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    font-family: var(--tb-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tb-muted);
+    background: transparent;
+    white-space: nowrap;
+}
+
+.tb-mode-badge__dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 1px;
+    background: var(--tb-muted);
+    flex-shrink: 0;
+}
+
+.tb-mode-badge--paper {
+    color: var(--tb-caution);
+    border-color: rgba(210, 153, 34, 0.45);
+}
+.tb-mode-badge--paper .tb-mode-badge__dot { background: var(--tb-caution); }
+
+.tb-mode-badge--real {
+    color: var(--tb-estop-hi);
+    border-color: rgba(248, 81, 73, 0.45);
+    background: rgba(218, 54, 51, 0.14);
+}
+.tb-mode-badge--real .tb-mode-badge__dot {
+    background: var(--tb-estop-hi);
+}
+
+.tb-mode-badge--unknown { color: var(--tb-muted); }
+
+/* ----- Tecla de perigo (flat) ----- */
+.tb-key--danger {
+    background: var(--tb-estop);
+    color: #f0f3f6;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.75rem;
+    border: 1px solid rgba(240, 246, 252, 0.12);
+    border-radius: 0;
+}
+
+.tb-key--danger:hover:not(:disabled) { filter: brightness(1.08); }
+.tb-key--danger:active:not(:disabled) { filter: brightness(0.92); }
+
+/* ----- Modal de confirmação de comando destrutivo ----- */
+.tb-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(1, 4, 9, 0.7);
+}
+
+.tb-confirm-overlay.hidden { display: none; }
+
+.tb-confirm {
+    width: 100%;
+    max-width: 26rem;
+    background: var(--tb-panel);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    color: var(--tb-ink);
+    font-family: var(--tb-sans);
+    padding: 0.9rem 1rem 1rem;
+}
+
+.tb-confirm__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+}
+
+.tb-confirm__title {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--tb-ink);
+}
+
+.tb-confirm__close {
+    background: none;
+    border: 0;
+    color: var(--tb-muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.15rem;
+}
+.tb-confirm__close:hover { color: var(--tb-ink); }
+
+.tb-confirm__mode {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.65rem;
+}
+
+.tb-confirm__mode-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--tb-muted);
+}
+
+.tb-confirm__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin: 0 0 0.65rem;
+}
+
+.tb-confirm__stats > div {
+    background: var(--tb-ground);
+    border: 1px solid var(--tb-hair);
+    padding: 0.45rem 0.6rem;
+}
+
+.tb-confirm__stats dt {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tb-muted);
+    margin-bottom: 0.1rem;
+}
+
+.tb-confirm__stats dd {
+    margin: 0;
+    font-family: var(--tb-mono);
+    font-size: 0.92rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--tb-ink);
+}
+
+.tb-confirm__note {
+    margin: 0 0 0.85rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--tb-legend);
+}
+
+.tb-confirm__keys {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* ----- Banner persistente de resultado de comando (Logs) ----- */
+.tb-cmd-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+}
+
+.tb-cmd-banner[hidden] { display: none; }
+
+.tb-cmd-banner__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    background: var(--tb-ground);
+    border: 1px solid var(--tb-hair);
+    border-radius: 0;
+    padding: 0.5rem 0.6rem;
+}
+
+.tb-cmd-banner__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 1px;
+    margin-top: 0.3rem;
+    flex-shrink: 0;
+    background: var(--tb-muted);
+}
+
+.tb-cmd-banner__item--success .tb-cmd-banner__dot { background: var(--tb-run-hi); }
+.tb-cmd-banner__item--warn .tb-cmd-banner__dot { background: var(--tb-caution); }
+.tb-cmd-banner__item--error .tb-cmd-banner__dot { background: var(--tb-estop-hi); }
+
+.tb-cmd-banner__body { min-width: 0; flex: 1; }
+
+.tb-cmd-banner__title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--tb-ink);
+}
+
+.tb-cmd-banner__meta {
+    font-family: var(--tb-mono);
+    font-size: 0.6875rem;
+    color: var(--tb-muted);
+    margin-top: 0.1rem;
+}
+
+.tb-cmd-banner__dismiss {
+    background: none;
+    border: 0;
+    color: var(--tb-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.1rem 0.25rem;
+    flex-shrink: 0;
+}
+.tb-cmd-banner__dismiss:hover { color: var(--tb-ink); }

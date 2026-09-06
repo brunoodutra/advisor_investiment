@@ -8,7 +8,11 @@
     <!-- External CSS Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260828a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=20260905polish">
+    <link rel="stylesheet" href="tradebot-hmi.css?v=20260905polish">
     <style>
         /* Garante SPA: só a página .active aparece, mesmo se o CSS principal atrasar */
         .page-view { display: none !important; }
@@ -388,178 +392,176 @@
 
     <!-- Trade Bot Page -->
     <div id="trade-bot-page" class="page-view">
-        <div class="container mx-auto px-4 py-6 md:py-8">
+        <div class="tb-hmi">
 
-            <!-- ================= HERO STATUS BAR ================= -->
-            <section id="tb-hero" class="crypto-card p-5 md:p-6 mb-6 md:mb-8 relative overflow-hidden">
-                <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-600/5 blur-3xl pointer-events-none"></div>
-                <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5 relative z-10">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <button class="nav-btn self-start sm:self-center" id="back-to-trade-dashboard-btn" onclick="home_dashboard()">
-                            <i class="fas fa-arrow-left mr-2"></i>Voltar
-                        </button>
-                        <div class="flex items-start gap-4">
-                            <div class="icon-chip icon-blue" id="tb-hero-icon" style="width:56px;height:56px;font-size:1.35rem;">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap mb-1">
-                                    <h2 class="text-2xl md:text-3xl font-bold">Trade Bot</h2>
-                                    <span id="tb-status-pill" class="tb-status-pill tb-status--offline">
-                                        <span class="tb-status-dot"></span><span class="tb-status-label">Offline</span>
-                                    </span>
-                                </div>
-                                <p class="text-sm text-gray-400 mb-1">
-                                    Estratégia atual: <span id="tb-hero-strategy" class="text-gray-200 font-medium">IA Multi-Indicadores</span>
-                                    ·
-                                    Perfil: <span id="tb-hero-profile" class="text-gray-200 font-medium">Moderado</span>
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    Última atualização: <span id="trade-bot-last-update">--</span>
-                                    ·
-                                    Tempo ativo: <span id="tb-hero-uptime" class="tabular-nums">00:00:00</span>
-                                </p>
+            <!-- ============ COMMAND BAR ============ -->
+            <header class="tb-fascia" id="tb-hero">
+                <button class="tb-key tb-key--aux" id="back-to-trade-dashboard-btn" onclick="home_dashboard()" type="button">
+                    Voltar
+                </button>
+                <div class="tb-fascia__ident">
+                    <div class="tb-lamp tb-lamp--offline" id="tb-hero-icon" aria-hidden="true"><span class="tb-lamp__lens"></span></div>
+                    <div class="tb-fascia__copy">
+                        <div class="tb-fascia__title-row">
+                            <h2 class="tb-fascia__name">Trade Bot</h2>
+                            <span id="tb-status-pill" class="tb-status-pill tb-status--offline">
+                                <span class="tb-status-dot"></span><span class="tb-status-label">Offline</span>
+                            </span>
+                            <span id="tb-mode-badge" class="tb-mode-badge tb-mode-badge--unknown" title="Modo de operação do bot (ambiente TRADING_MODE / MARKET_MODE)">
+                                <span class="tb-mode-badge__dot" aria-hidden="true"></span><span id="tb-mode-badge-label">Modo —</span>
+                            </span>
+                        </div>
+                        <p class="tb-fascia__via">
+                            <span id="tb-hero-strategy">IA Multi-Indicadores</span>
+                            ·
+                            <span id="tb-hero-profile">Moderado</span>
+                        </p>
+                        <p class="tb-fascia__meta">
+                            Atualização <span id="trade-bot-last-update">--</span>
+                            ·
+                            Ativo <span id="tb-hero-uptime" class="tabular-nums">00:00:00</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="tb-fascia__keys">
+                    <button id="tb-master-toggle" class="tb-key tb-key--run" type="button" aria-pressed="false">
+                        <i class="fas fa-play" id="tb-master-toggle-icon"></i>
+                        <span id="tb-master-toggle-label">Ligar Bot</span>
+                    </button>
+                    <button id="tb-emergency-close" class="tb-key tb-key--estop" type="button" title="Fecha todas as posições e pausa novas entradas">
+                        <span class="tb-estop-head" aria-hidden="true"></span>
+                        <span class="tb-estop-label">Fechar Tudo</span>
+                    </button>
+                    <button id="tb-config-btn" class="tb-key tb-key--aux" type="button">
+                        Configurar
+                    </button>
+                </div>
+            </header>
+
+            <!-- ============ KPI STRIP ============ -->
+            <div class="tb-kpi-strip" id="tb-kpi-grid" aria-label="Indicadores">
+                <article class="tb-readout tb-readout--lead">
+                    <span class="tb-readout__tag">P&amp;L Aberto</span>
+                    <div class="tb-readout__value tabular-nums" id="trade-bot-open-pnl">$0.00</div>
+                    <div class="tb-readout__sub" id="tb-open-pnl-sub">0 posições ativas</div>
+                </article>
+                <article class="tb-readout tb-readout--lead">
+                    <span class="tb-readout__tag">Posições</span>
+                    <div class="tb-readout__value tabular-nums" id="trade-bot-active-positions">0</div>
+                    <div class="tb-readout__sub" id="tb-active-sub">Expostas: $0.00</div>
+                </article>
+                <article class="tb-readout">
+                    <span class="tb-readout__tag">P&amp;L Realizado</span>
+                    <div class="tb-readout__value tabular-nums" id="trade-bot-realized-pnl">$0.00</div>
+                    <div class="tb-readout__sub" id="trade-bot-avg-pnl">Média: 0.00%</div>
+                </article>
+                <article class="tb-readout">
+                    <span class="tb-readout__tag">Win Rate</span>
+                    <div class="tb-readout__value tabular-nums" id="trade-bot-win-rate">0.00%</div>
+                    <div class="tb-readout__sub" id="trade-bot-closed-trades">0 trades fechados</div>
+                </article>
+                <article class="tb-readout">
+                    <span class="tb-readout__tag">Profit Factor</span>
+                    <div class="tb-readout__value tabular-nums" id="tb-profit-factor">0.00</div>
+                    <div class="tb-readout__sub" id="tb-profit-factor-sub">Wins/Losses brutos</div>
+                </article>
+                <article class="tb-readout">
+                    <span class="tb-readout__tag">Drawdown Máx.</span>
+                    <div class="tb-readout__value tabular-nums" id="tb-max-drawdown">0.00%</div>
+                    <div class="tb-readout__sub" id="tb-max-dd-sub">Pico - Vale</div>
+                </article>
+                <article class="tb-readout">
+                    <span class="tb-readout__tag">Expectativa</span>
+                    <div class="tb-readout__value tabular-nums" id="tb-expectancy">$0.00</div>
+                    <div class="tb-readout__sub" id="tb-expectancy-sub">por trade médio</div>
+                </article>
+                <article class="tb-readout">
+                    <span class="tb-readout__tag">Total Entradas</span>
+                    <div class="tb-readout__value tabular-nums" id="trade-bot-entry-total">0</div>
+                    <div class="tb-readout__sub" id="trade-bot-entry-breakdown">0 buy / 0 sell</div>
+                </article>
+            </div>
+
+            <!-- ============ MAIN: ABERTOS + ÚLTIMOS TRADES ============ -->
+            <section class="tb-main" aria-label="Operação">
+                <div class="tb-main__open">
+                    <div class="tb-well tb-well--flush">
+                        <div class="tb-well__head">
+                            <h3 class="tb-well__title">Posições abertas</h3>
+                            <div class="tb-well__tools">
+                                <input id="tb-open-search" type="search" placeholder="Buscar ativo…" class="tb-input tb-input--sm" />
+                                <select id="tb-open-filter-side" class="tb-input tb-input--sm w-auto">
+                                    <option value="">Todos os lados</option>
+                                    <option value="LONG">LONG</option>
+                                    <option value="SHORT">SHORT</option>
+                                </select>
                             </div>
                         </div>
+                        <div id="trade-bot-open-positions" class="tb-table-wrap">
+                            <p class="tb-empty">Sem exposição. Ao ligar o bot, cada par entra aqui com entrada, atual, SL/TP e P&amp;L.</p>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3 xl:gap-4">
-                        <button id="tb-master-toggle" class="tb-btn tb-btn--primary px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all" aria-pressed="false">
-                            <i class="fas fa-play" id="tb-master-toggle-icon"></i>
-                            <span id="tb-master-toggle-label">Ligar Bot</span>
-                        </button>
-                        <button id="tb-emergency-close" class="tb-btn tb-btn--danger px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all" title="Fechar todas as posições imediatamente">
-                            <i class="fas fa-stop-circle"></i>
-                            <span class="hidden sm:inline">Fechar Tudo</span>
-                        </button>
-                        <button id="tb-config-btn" class="tb-btn tb-btn--ghost px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all">
-                            <i class="fas fa-cog"></i>
-                            <span class="hidden md:inline">Configurar</span>
-                        </button>
+                </div>
+                <div class="tb-main__side">
+                    <div class="tb-well tb-well--flush">
+                        <div class="tb-well__head">
+                            <h3 class="tb-well__title">Últimos trades</h3>
+                            <span class="tb-well__stamp" id="tb-recent-count">0</span>
+                        </div>
+                        <div id="tb-recent-trades" class="tb-recent">
+                            <p class="tb-empty">Trades fechados recentes aparecem aqui.</p>
+                        </div>
+                    </div>
+                    <div class="tb-well tb-well--flush tb-well--detail">
+                        <h3 class="tb-well__title">Detalhe da posição</h3>
+                        <div id="tb-open-detail">
+                            <p class="tb-empty">Selecione uma posição aberta para ver contexto completo.</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ================= 8 KPIs ROWS ================= -->
-            <section class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-6 md:mb-8" id="tb-kpi-grid">
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">P&amp;L Realizado</span>
-                        <span class="icon-chip icon-green" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-dollar-sign"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="trade-bot-realized-pnl">$0.00</div>
-                    <div class="tradebot-kpi-sub" id="trade-bot-avg-pnl">Média: 0.00%</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">P&amp;L Aberto</span>
-                        <span class="icon-chip icon-yellow" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-bolt"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="trade-bot-open-pnl">$0.00</div>
-                    <div class="tradebot-kpi-sub" id="tb-open-pnl-sub">0 posições ativas</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">Win Rate</span>
-                        <span class="icon-chip icon-blue" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-trophy"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="trade-bot-win-rate">0.00%</div>
-                    <div class="tradebot-kpi-sub" id="trade-bot-closed-trades">0 trades fechados</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">Profit Factor</span>
-                        <span class="icon-chip icon-yellow" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-balance-scale"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="tb-profit-factor">0.00</div>
-                    <div class="tradebot-kpi-sub" id="tb-profit-factor-sub">Wins/Losses brutos</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">Posições Abertas</span>
-                        <span class="icon-chip icon-blue" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-layer-group"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="trade-bot-active-positions">0</div>
-                    <div class="tradebot-kpi-sub" id="tb-active-sub">Expostas: $0.00</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">Total Entradas</span>
-                        <span class="icon-chip icon-green" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-signal"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="trade-bot-entry-total">0</div>
-                    <div class="tradebot-kpi-sub" id="trade-bot-entry-breakdown">0 buy / 0 sell</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">Drawdown Máx.</span>
-                        <span class="icon-chip icon-red" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-angle-double-down"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="tb-max-drawdown">0.00%</div>
-                    <div class="tradebot-kpi-sub" id="tb-max-dd-sub">Pico - Vale</div>
-                </div>
-                <div class="crypto-card p-4 md:p-5">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <span class="tradebot-kpi-label">Expectativa</span>
-                        <span class="icon-chip icon-green" style="width:34px;height:34px;font-size:.85rem;"><i class="fas fa-chart-line"></i></span>
-                    </div>
-                    <div class="tradebot-kpi-value tabular-nums" id="tb-expectancy">$0.00</div>
-                    <div class="tradebot-kpi-sub" id="tb-expectancy-sub">por trade médio</div>
-                </div>
-            </section>
-
-            <!-- ================= TABS NAV ================= -->
-            <section id="tb-tabs-section" class="mb-6 md:mb-8">
+            <!-- ============ TABS: análise ============ -->
+            <section id="tb-tabs-section" class="tb-recipes">
                 <div class="tb-tabs-nav" role="tablist" aria-label="Painel Trade Bot">
-                    <button class="tb-tab active" role="tab" aria-selected="true" data-tb-tab="overview">
-                        <i class="fas fa-chart-pie mr-2"></i>Visão Geral
-                    </button>
+                    <button class="tb-tab active" role="tab" aria-selected="true" data-tb-tab="overview">Visão Geral</button>
                     <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="open">
-                        <i class="fas fa-bullseye mr-2"></i>Trades Abertos
+                        Trades Abertos
                         <span id="tb-tab-open-count" class="tb-tab-count hidden">0</span>
                     </button>
-                    <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="history">
-                        <i class="fas fa-history mr-2"></i>Histórico
-                    </button>
-                    <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="performance">
-                        <i class="fas fa-chart-bar mr-2"></i>Desempenho
-                    </button>
-                    <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="logs">
-                        <i class="fas fa-terminal mr-2"></i>Logs &amp; Eventos
-                    </button>
+                    <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="history">Histórico</button>
+                    <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="performance">Desempenho</button>
+                    <button class="tb-tab" role="tab" aria-selected="false" data-tb-tab="logs">Logs &amp; Eventos</button>
                 </div>
 
                 <!-- ================= TAB: OVERVIEW ================= -->
                 <div class="tb-tab-panel active" data-tb-panel="overview">
-                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        <div class="xl:col-span-2 space-y-6">
-                            <div class="chart-container">
-                                <div class="flex items-center justify-between mb-4 gap-3">
-                                    <h3 class="text-xl font-semibold">Curva de Capital (Equity)</h3>
-                                    <div class="flex gap-2 text-xs">
-                                        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>Equity</span>
-                                        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>Pico</span>
-                                    </div>
+                    <div class="tb-recipe-grid">
+                        <div class="tb-well">
+                            <div class="tb-well__head">
+                                <h3 class="tb-well__title">Equity</h3>
+                                <div class="tb-display__legend">
+                                    <span class="tb-leg tb-leg--eq">Equity</span>
+                                    <span class="tb-leg tb-leg--pk">Pico</span>
                                 </div>
-                                <canvas id="trade-bot-cumulative-chart" height="200"></canvas>
                             </div>
-                            <div class="chart-container">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h3 class="text-xl font-semibold">Drawdown ao Longo do Tempo</h3>
-                                    <span id="tb-dd-stamp" class="text-xs text-gray-400 tabular-nums">Máx: 0.00%</span>
-                                </div>
-                                <canvas id="trade-bot-drawdown-chart" height="120"></canvas>
-                            </div>
+                            <canvas id="trade-bot-cumulative-chart" height="200"></canvas>
                         </div>
-                        <div class="space-y-6">
-                            <div class="chart-container">
-                                <h3 class="text-xl font-semibold mb-4">Resultado Diário</h3>
-                                <canvas id="trade-bot-daily-chart" height="200"></canvas>
+                        <div class="tb-well">
+                            <div class="tb-well__head">
+                                <h3 class="tb-well__title">Drawdown</h3>
+                                <span id="tb-dd-stamp" class="tb-well__stamp tabular-nums">Máx: 0.00%</span>
                             </div>
-                            <div class="crypto-card p-5">
-                                <h3 class="text-xl font-semibold mb-4">Mercado Agora</h3>
-                                <div id="tb-market-overview" class="space-y-3">
-                                    <p class="text-sm text-gray-400 text-center py-4">Aguardando dados do mercado…</p>
-                                </div>
+                            <canvas id="trade-bot-drawdown-chart" height="120"></canvas>
+                        </div>
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">Resultado diário</h3>
+                            <canvas id="trade-bot-daily-chart" height="200"></canvas>
+                        </div>
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">Mercado agora</h3>
+                            <div id="tb-market-overview">
+                                <p class="tb-empty">Sem ticker ainda. O readout enche quando a API de mercado responder.</p>
                             </div>
                         </div>
                     </div>
@@ -567,27 +569,27 @@
 
                 <!-- ================= TAB: TRADES ABERTOS ================= -->
                 <div class="tb-tab-panel" data-tb-panel="open">
-                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        <div class="xl:col-span-2 crypto-card p-5">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-                                <h3 class="text-xl font-semibold">Posições Abertas</h3>
-                                <div class="flex gap-2 text-sm flex-wrap">
-                                    <input id="tb-open-search" type="search" placeholder="Buscar ativo…" class="tb-input tb-input--sm" />
-                                    <select id="tb-open-filter-side" class="tb-input tb-input--sm w-auto">
+                    <div class="tb-open-layout">
+                        <div class="tb-well tb-well--wide">
+                            <div class="tb-well__head">
+                                <h3 class="tb-well__title">Roster de posições</h3>
+                                <div class="tb-well__tools">
+                                    <input id="tb-open-search-tab" type="search" placeholder="Buscar ativo…" class="tb-input tb-input--sm" />
+                                    <select id="tb-open-filter-side-tab" class="tb-input tb-input--sm w-auto">
                                         <option value="">Todos os lados</option>
                                         <option value="LONG">LONG</option>
                                         <option value="SHORT">SHORT</option>
                                     </select>
                                 </div>
                             </div>
-                            <div id="trade-bot-open-positions" class="tb-table-wrap">
-                                <p class="text-gray-400 text-center py-8">Nenhuma posição aberta</p>
+                            <div id="trade-bot-open-positions-tab" class="tb-table-wrap">
+                                <p class="tb-empty">Mesma lista da seção principal, com mais espaço.</p>
                             </div>
                         </div>
-                        <div class="crypto-card p-5">
-                            <h3 class="text-xl font-semibold mb-4">Detalhe da Posição</h3>
-                            <div id="tb-open-detail">
-                                <p class="text-sm text-gray-400 text-center py-10">Selecione uma posição para ver o contexto completo, gráfico de entrada e situação do mercado no momento do trade.</p>
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">Detalhe da posição</h3>
+                            <div id="tb-open-detail-tab">
+                                <p class="tb-empty">Selecione uma linha do roster para ver entrada, gráfico e mercado no fill.</p>
                             </div>
                         </div>
                     </div>
@@ -595,15 +597,21 @@
 
                 <!-- ================= TAB: HISTÓRICO ================= -->
                 <div class="tb-tab-panel" data-tb-panel="history">
-                    <div class="crypto-card p-5">
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
-                            <h3 class="text-xl font-semibold">Histórico de Trades</h3>
-                            <div class="flex gap-2 flex-wrap">
+                    <div class="tb-well tb-hist-chart-well">
+                        <div class="tb-well__head">
+                            <h3 class="tb-well__title">P&amp;L realizado (cumulativo)</h3>
+                        </div>
+                        <canvas id="trade-bot-history-pnl-chart" height="160"></canvas>
+                    </div>
+                    <div class="tb-well">
+                        <div class="tb-well__head">
+                            <h3 class="tb-well__title">Histórico de trades</h3>
+                            <div class="tb-well__tools">
                                 <input id="tb-hist-search" type="search" placeholder="Buscar símbolo ou motivo…" class="tb-input tb-input--sm w-full sm:w-auto" />
                                 <select id="tb-hist-filter-side" class="tb-input tb-input--sm w-auto">
-                                    <option value="">Lados: todos</option>
-                                    <option value="LONG">LONG</option>
-                                    <option value="SHORT">SHORT</option>
+                                    <option value="">Posição: todas</option>
+                                    <option value="buy">LONG (BUY→SELL)</option>
+                                    <option value="sell">SHORT (SELL→BUY)</option>
                                 </select>
                                 <select id="tb-hist-filter-outcome" class="tb-input tb-input--sm w-auto">
                                     <option value="">Resultado: todos</option>
@@ -611,24 +619,22 @@
                                     <option value="loss">Prejuízo</option>
                                 </select>
                                 <select id="tb-hist-sort" class="tb-input tb-input--sm w-auto">
-                                    <option value="opened_desc">Abertura: mais novas</option>
-                                    <option value="opened_asc">Abertura: mais antigas</option>
+                                    <option value="opened_desc">Fechamento: mais novos</option>
+                                    <option value="opened_asc">Fechamento: mais antigos</option>
                                     <option value="pnl_desc">P&amp;L: maior</option>
                                     <option value="pnl_asc">P&amp;L: menor</option>
                                 </select>
-                                <button id="tb-hist-export" class="tb-btn tb-btn--ghost rounded-lg text-sm px-3 py-2 flex items-center gap-2">
-                                    <i class="fas fa-file-csv"></i> Exportar CSV
-                                </button>
+                                <button id="tb-hist-export" class="tb-key tb-key--aux tb-key--sm" type="button">Exportar CSV</button>
                             </div>
                         </div>
                         <div id="tb-history-table" class="tb-table-wrap">
-                            <p class="text-gray-400 text-center py-8">Histórico vazio</p>
+                            <p class="tb-empty">Sem fills ainda. Trades fechados entram aqui com P&amp;L, motivo e duração.</p>
                         </div>
-                        <div id="tb-history-pagination" class="flex items-center justify-between mt-5 text-sm text-gray-400">
+                        <div id="tb-history-pagination" class="tb-pager">
                             <div><span id="tb-hist-count">0</span> trade(s) · Página <span id="tb-hist-page">1</span>/<span id="tb-hist-total-pages">1</span></div>
-                            <div class="flex gap-2">
-                                <button id="tb-hist-prev" class="tb-btn tb-btn--ghost rounded px-3 py-1.5">Anterior</button>
-                                <button id="tb-hist-next" class="tb-btn tb-btn--ghost rounded px-3 py-1.5">Próxima</button>
+                            <div class="tb-pager__keys">
+                                <button id="tb-hist-prev" class="tb-key tb-key--aux tb-key--sm" type="button">Anterior</button>
+                                <button id="tb-hist-next" class="tb-key tb-key--aux tb-key--sm" type="button">Próxima</button>
                             </div>
                         </div>
                     </div>
@@ -636,20 +642,18 @@
 
                 <!-- ================= TAB: DESEMPENHO ================= -->
                 <div class="tb-tab-panel" data-tb-panel="performance">
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-                        <div class="chart-container">
-                            <h3 class="text-xl font-semibold mb-4">Fechamentos por Motivo</h3>
+                    <div class="tb-recipe-grid tb-recipe-grid--2">
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">Fechamentos por motivo</h3>
                             <canvas id="trade-bot-reasons-chart" height="220"></canvas>
                         </div>
-                        <div class="chart-container">
-                            <h3 class="text-xl font-semibold mb-4">Compras vs Vendas por Ativo</h3>
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">Compras vs vendas por ativo</h3>
                             <canvas id="trade-bot-symbol-chart" height="220"></canvas>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-                        <div class="crypto-card p-5">
-                            <h3 class="text-xl font-semibold mb-4">KPIs Avançados</h3>
-                            <div id="tb-advanced-kpis" class="grid grid-cols-2 gap-3 md:gap-4">
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">KPIs avançados</h3>
+                            <div id="tb-advanced-kpis" class="tb-adv-grid">
                                 <div class="tb-adv-kpi"><span class="tb-adv-kpi__label">Sharpe (simulado)</span><span class="tb-adv-kpi__value tabular-nums">—</span></div>
                                 <div class="tb-adv-kpi"><span class="tb-adv-kpi__label">Sortino (simulado)</span><span class="tb-adv-kpi__value tabular-nums">—</span></div>
                                 <div class="tb-adv-kpi"><span class="tb-adv-kpi__label">Gross Profit / Loss</span><span class="tb-adv-kpi__value tabular-nums" id="tb-gross-pl">$0 / $0</span></div>
@@ -660,10 +664,10 @@
                                 <div class="tb-adv-kpi"><span class="tb-adv-kpi__label">Duração Média</span><span class="tb-adv-kpi__value tabular-nums" id="tb-avg-duration">—</span></div>
                             </div>
                         </div>
-                        <div class="crypto-card p-5">
-                            <h3 class="text-xl font-semibold mb-4">Heatmap Mensal</h3>
+                        <div class="tb-well">
+                            <h3 class="tb-well__title">Heatmap mensal</h3>
                             <div id="tb-monthly-heatmap" class="tb-heatmap">
-                                <p class="text-sm text-gray-400 text-center py-6">Sem dados históricos suficientes.</p>
+                                <p class="tb-empty">Sem histórico suficiente para o mapa de calor.</p>
                             </div>
                         </div>
                     </div>
@@ -671,10 +675,10 @@
 
                 <!-- ================= TAB: LOGS & EVENTOS ================= -->
                 <div class="tb-tab-panel" data-tb-panel="logs">
-                    <div class="crypto-card p-5">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-                            <h3 class="text-xl font-semibold">Timeline de Eventos</h3>
-                            <div class="flex gap-2 flex-wrap">
+                    <div class="tb-well">
+                        <div class="tb-well__head">
+                            <h3 class="tb-well__title">Timeline de eventos</h3>
+                            <div class="tb-well__tools">
                                 <select id="tb-log-level" class="tb-input tb-input--sm w-auto">
                                     <option value="">Todos os níveis</option>
                                     <option value="info">INFO</option>
@@ -682,22 +686,43 @@
                                     <option value="warn">WARN</option>
                                     <option value="error">ERROR</option>
                                 </select>
-                                <button id="tb-logs-clear" class="tb-btn tb-btn--ghost rounded text-sm px-3 py-2 flex items-center gap-2">
-                                    <i class="fas fa-eraser"></i> Limpar
-                                </button>
+                                <button id="tb-logs-clear" class="tb-key tb-key--aux tb-key--sm" type="button">Limpar</button>
                             </div>
                         </div>
+                        <div id="tb-command-banner" class="tb-cmd-banner" hidden></div>
                         <div id="trade-bot-recent-events" class="tb-timeline">
-                            <p class="text-gray-400 text-center py-8">Nenhum evento registrado</p>
+                            <p class="tb-empty">Nenhum evento. Heartbeat, fills e erros aparecem aqui em ordem.</p>
                         </div>
                     </div>
                 </div>
             </section>
+
+            <!-- ============ CONFIRMAÇÃO DE COMANDO DESTRUTIVO (in-skin, sem confirm() nativo) ============ -->
+            <div id="tb-confirm-modal" class="tb-confirm-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tb-confirm-title" aria-describedby="tb-confirm-note">
+                <div class="tb-confirm" role="document">
+                    <div class="tb-confirm__head">
+                        <h3 id="tb-confirm-title" class="tb-confirm__title">Confirmar comando</h3>
+                        <button id="tb-confirm-close" class="tb-confirm__close" type="button" aria-label="Cancelar e fechar">&times;</button>
+                    </div>
+                    <p class="tb-confirm__mode">
+                        <span class="tb-confirm__mode-label">Ambiente</span>
+                        <span id="tb-confirm-mode-badge" class="tb-mode-badge tb-mode-badge--unknown">
+                            <span class="tb-mode-badge__dot" aria-hidden="true"></span><span id="tb-confirm-mode-label">Modo —</span>
+                        </span>
+                    </p>
+                    <dl class="tb-confirm__stats" id="tb-confirm-stats"></dl>
+                    <p class="tb-confirm__note" id="tb-confirm-note"></p>
+                    <div class="tb-confirm__keys">
+                        <button id="tb-confirm-cancel" class="tb-key tb-key--aux" type="button">Cancelar</button>
+                        <button id="tb-confirm-accept" class="tb-key tb-key--danger" type="button">Confirmar</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Trade Detail Modal (para drill-down de trade do histórico) -->
-    <div id="tb-trade-detail-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4" aria-modal="true" role="dialog">
+    <div id="tb-trade-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" aria-modal="true" role="dialog">
         <div class="bg-[--bg-card] border border-[--border-color] rounded-2xl shadow-[var(--shadow-modal)] w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between p-5 border-b border-[--border-color] sticky top-0 bg-[--bg-card] z-10">
                 <h3 class="text-xl font-semibold" id="tb-modal-title">Detalhes do Trade</h3>
@@ -708,7 +733,7 @@
     </div>
 
     <!-- Trade Bot Configuration Modal (Limites de capital e parâmetros de risco) -->
-    <div id="tb-config-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4" aria-modal="true" role="dialog">
+    <div id="tb-config-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" aria-modal="true" role="dialog">
         <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between p-5 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
                 <div class="flex items-center gap-3">
@@ -726,8 +751,8 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-1">Estado do Bot</label>
                         <select id="tb-cfg-status" class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                            <option value="running">🟢 Ativo (Executando ordens)</option>
-                            <option value="paused">⏸️ Pausado (Sem novas entradas)</option>
+                            <option value="running">Ativo (executando ordens)</option>
+                            <option value="paused">Pausado (sem novas entradas)</option>
                         </select>
                     </div>
                     <div>
@@ -907,7 +932,7 @@
     <script src="supabase.local.js?v=20260828a"></script>
 
     <!-- Custom JavaScript (anti-cache versionado para evitar código velho no navegador) -->
-    <script type="module" src="script.js?v=20260828a"></script>
+    <script type="module" src="script.js?v=20260905polish"></script>
 
 
     <!-- Settings Modal -->

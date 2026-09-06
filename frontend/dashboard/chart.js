@@ -3,7 +3,7 @@ import { state } from './state.js?v=20260828a';
 import { fetchCandlestickData, fetchRecommendationHistory } from './api.js?v=20260828a';
 import { IndicatorsManager } from './indicators.js?v=20260828a';
 import { createRecommendationMarkers, debounce, normalizeTimeToCandle, updateCandleData, formatCurrency, normalizeUpdateIntervalMs } from './utils.js?v=20260828a';
-import { showPage, loadCryptoRecommendation, loadCryptoSentiment, showRecommendationTooltip, showNotification } from './ui.js?v=20260828a';
+import { showPage, loadCryptoRecommendation, loadCryptoSentiment, showRecommendationTooltip, showNotification } from './ui.js?v=20260905hard';
 import { saveUserSettings } from './userSettings.js?v=20260828a';
 
 const darkThemeOptions = {

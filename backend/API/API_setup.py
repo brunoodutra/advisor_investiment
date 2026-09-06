@@ -312,6 +312,103 @@ def _parse_timestamp(value: str):
     except Exception:
         return None
 
+def _build_closed_trades(order_history: list) -> list:
+    """Reconstrói trades fechados a partir dos eventos TRADE_CLOSED,
+    enriquecendo com dados da entrada (ENTRY_SUBMITTED/ENTRY_ACCEPTED)."""
+    entries_by_key = {}
+    entries_by_symbol = defaultdict(list)
+    for event in order_history:
+        if event.get("event_type") not in ("ENTRY_SUBMITTED", "ENTRY_ACCEPTED", "ENTRY_FILLED"):
+            continue
+        details = event.get("details", {}) or {}
+        trade = event.get("trade", {}) or {}
+        signal_key = details.get("signal_key") or trade.get("signal_key")
+        symbol = event.get("symbol") or trade.get("symbol")
+        info = {
+            "opened_at": event.get("timestamp"),
+            "risk_usd": _safe_float(details.get("risk_usd")) or None,
+            "signal_key": signal_key,
+        }
+        if signal_key:
+            entries_by_key.setdefault(signal_key, info)
+        if symbol:
+            entries_by_symbol[symbol].append(info)
+
+    closed = []
+    for event in order_history:
+        if event.get("event_type") != "TRADE_CLOSED":
+            continue
+        details = event.get("details", {}) or {}
+        trade = event.get("trade", {}) or {}
+        symbol = event.get("symbol") or trade.get("symbol")
+        signal_key = trade.get("signal_key")
+        entry = entries_by_key.get(signal_key) if signal_key else None
+        if entry is None and symbol and entries_by_symbol.get(symbol):
+            closed_ts = event.get("timestamp") or ""
+            candidates = [e for e in entries_by_symbol[symbol] if (e.get("opened_at") or "") <= closed_ts]
+            entry = candidates[-1] if candidates else entries_by_symbol[symbol][-1]
+        entry = entry or {}
+
+        pnl_usd = _safe_float(details.get("pnl_usd", trade.get("pnl_usd")))
+        pnl_percent = _safe_float(details.get("pnl_percent", trade.get("pnl_percent")))
+        side = str(trade.get("side") or details.get("side") or "").lower()
+        entry_price = _safe_float(trade.get("entry_price"))
+        quantity = _safe_float(trade.get("quantity"))
+        exit_price = (
+            _safe_float(details.get("exit_price"))
+            or _safe_float(trade.get("exit_price"))
+            or _safe_float(details.get("current_price"))
+        )
+        # Alguns fechamentos antigos gravaram exit_price=0 mas com pnl — reconstrói.
+        if exit_price <= 0 and entry_price > 0 and quantity > 0 and pnl_usd != 0:
+            if side == "buy":
+                exit_price = entry_price + (pnl_usd / quantity)
+            elif side == "sell":
+                exit_price = entry_price - (pnl_usd / quantity)
+        exit_side = "sell" if side == "buy" else ("buy" if side == "sell" else None)
+
+        closed.append({
+            "id": trade.get("entry_order_id") or signal_key or f"{symbol}:{event.get('timestamp')}",
+            "symbol": symbol,
+            "side": side or None,
+            "exit_side": exit_side,
+            "quantity": quantity,
+            "entry_price": entry_price,
+            "exit_price": round(exit_price, 8) if exit_price else 0.0,
+            "position_value_usd": _safe_float(trade.get("position_value_usd")),
+            "stop_loss": _safe_float(trade.get("stop_loss_price")) or None,
+            "take_profit": _safe_float(trade.get("take_profit_price")) or None,
+            "realized_pnl_usd": round(pnl_usd, 4),
+            "realized_pnl_percent": round(pnl_percent, 4),
+            "exit_reason": details.get("reason") or "UNKNOWN",
+            "opened_at": entry.get("opened_at"),
+            "closed_at": event.get("timestamp"),
+            "signal_key": signal_key,
+            "risk_usd": entry.get("risk_usd"),
+        })
+    closed.sort(key=lambda t: t.get("closed_at") or "", reverse=True)
+    return closed
+
+def _get_trade_bot_environment() -> dict:
+    """Modo de operação do bot (paper/real, spot/futures).
+
+    Lê o mesmo ambiente que o processo do Trade Bot usa (Config / .env), para
+    que o dashboard possa mostrar de forma verdadeira onde as ordens caem.
+    """
+    config_cls = globals().get("Config")
+    trading = str(getattr(config_cls, "TRADING_MODE", "") or "").strip().upper()
+    market = str(getattr(config_cls, "MARKET_MODE", "") or "").strip().upper()
+    if not trading:
+        trading = (os.getenv("TRADING_MODE") or os.getenv("MODE") or "PAPER").strip().upper()
+    if not market:
+        market = (os.getenv("MARKET_MODE") or os.getenv("MARKET_TYPE") or "FUTURES").strip().upper()
+    return {
+        "trading_mode": trading,          # PAPER | REAL (qualquer valor != PAPER opera de verdade)
+        "market_mode": market,            # FUTURES | SPOT
+        "is_paper": trading == "PAPER",   # exchange_client.py: is_paper = TRADING_MODE == "PAPER"
+    }
+
+
 def _get_trade_bot_dashboard():
     active_trades = _load_json_list(_trade_bot_json_path("active_trades.json"))
     order_history = _load_json_list(_trade_bot_json_path("order_history.json"))
@@ -399,6 +496,7 @@ def _get_trade_bot_dashboard():
 
         stop_loss, take_profit = _trade_protection_prices(trade)
         active_positions.append({
+            "id": trade.get("entry_order_id") or trade.get("signal_key") or symbol,
             "symbol": symbol,
             "side": trade.get("side"),
             "status": trade.get("status"),
@@ -412,6 +510,7 @@ def _get_trade_bot_dashboard():
             "pnl_usd": round(current_pnl_usd, 4) if current_pnl_usd is not None else None,
             "pnl_percent": round(current_pnl_percent, 4) if current_pnl_percent is not None else None,
             "timestamp": trade.get("timestamp"),
+            "opened_at": trade.get("timestamp"),
         })
 
     total_closed = len(closed_events)
@@ -443,6 +542,8 @@ def _get_trade_bot_dashboard():
         "bot_status": bot_config.get("status", "running"),
         "bot_started_at": bot_config.get("started_at"),
         "config": bot_config,
+        "environment": _get_trade_bot_environment(),
+        "closed_trades": _build_closed_trades(order_history),
         "summary": {
             "active_positions": len(open_trades),
             "closed_trades": total_closed,
@@ -701,6 +802,55 @@ async def sentiment_analysis(crypto: str, limit: int = 10, lang: str = "mixed"):
 @app.get("/trade_bot/dashboard")
 def trade_bot_dashboard():
     return _get_trade_bot_dashboard()
+
+# Warmup do cache de sentimento: sem isso, o primeiro usuário após o TTL de
+# 10 min paga feeds RSS + LLM por cripto. Roda em thread daemon e re-aquece a
+# cada 8 min (antes do TTL expirar); o lock file evita que os 2 workers do
+# uvicorn façam o trabalho em dobro.
+_WARMUP_CRYPTOS = ["BTC", "ETH", "SOL", "ADA", "XRP"]
+_WARMUP_INTERVAL_SEC = 480
+_WARMUP_LOCK = _api_dir / "cache" / "sentiment" / ".warmup.lock"
+
+def _warmup_sentiment_once():
+    now = time.time()
+    try:
+        age = now - _WARMUP_LOCK.stat().st_mtime
+        if age < _WARMUP_INTERVAL_SEC:
+            return
+        _WARMUP_LOCK.unlink()  # lock velho de execução anterior: refaz
+    except FileNotFoundError:
+        pass
+    try:
+        fd = os.open(str(_WARMUP_LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+    except FileExistsError:
+        return
+    # Força refresh: sem invalidar, o re-aquecimento bateria no cache ainda
+    # válido e não renovaria o TTL.
+    cache_dir = _WARMUP_LOCK.parent
+    for cached_file in cache_dir.glob("*.json"):
+        try:
+            cached_file.unlink()
+        except Exception:
+            pass
+    for symbol in _WARMUP_CRYPTOS:
+        try:
+            get_sentiment_analysis_payload(crypto=symbol)
+        except Exception as e:
+            print(f"[warmup] sentiment {symbol}: {e}")
+
+def _warmup_sentiment_loop():
+    while True:
+        try:
+            _warmup_sentiment_once()
+        except Exception as e:
+            print(f"[warmup] falha geral: {e}")
+        time.sleep(_WARMUP_INTERVAL_SEC)
+
+@app.on_event("startup")
+def start_sentiment_warmup():
+    import threading
+    threading.Thread(target=_warmup_sentiment_loop, daemon=True).start()
 
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional

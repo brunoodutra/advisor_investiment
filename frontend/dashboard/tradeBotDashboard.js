@@ -1,7 +1,8 @@
-import { fetchTradeBotDashboard, fetchTradeBotConfig, saveTradeBotConfig, toggleTradeBotStatus, emergencyCloseTradeBot, closeTradeBotPosition } from './api.js?v=20260828a';
-import { showPage, showNotification } from './ui.js?v=20260828a';
+import { fetchTradeBotDashboard, fetchTradeBotConfig, saveTradeBotConfig, toggleTradeBotStatus, emergencyCloseTradeBot, closeTradeBotPosition, fetchCandlestickData } from './api.js?v=20260828a';
+import { showPage, showNotification } from './ui.js?v=20260905hard';
 
 let cumulativeChart = null;
+let historyPnlChart = null;
 let dailyChart = null;
 let symbolChart = null;
 let reasonsChart = null;
@@ -49,9 +50,17 @@ function destroyChart(chart) {
     }
 }
 
+function chartTheme(canvas) {
+    const hmi = canvas.closest('#trade-bot-page');
+    return hmi
+        ? { tick: '#8b949e', grid: '#30363d', legend: '#8b949e' }
+        : { tick: '#8b949e', grid: '#30363d', legend: '#e5e7eb' };
+}
+
 function renderLineChart(canvasId, labels, values, color) {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return null;
+    if (!canvas || typeof Chart === 'undefined') return null;
+    const theme = chartTheme(canvas);
     return new Chart(canvas, {
         type: 'line',
         data: {
@@ -59,7 +68,7 @@ function renderLineChart(canvasId, labels, values, color) {
             datasets: [{
                 data: values,
                 borderColor: color,
-                backgroundColor: `${color}33`,
+                backgroundColor: `${color}22`,
                 fill: true,
                 tension: 0.25,
             }]
@@ -70,8 +79,8 @@ function renderLineChart(canvasId, labels, values, color) {
                 legend: { display: false }
             },
             scales: {
-                x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-                y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+                x: { ticks: { color: theme.tick }, grid: { color: theme.grid } },
+                y: { ticks: { color: theme.tick }, grid: { color: theme.grid } }
             }
         }
     });
@@ -79,18 +88,19 @@ function renderLineChart(canvasId, labels, values, color) {
 
 function renderBarChart(canvasId, labels, datasets, stacked = false) {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return null;
+    if (!canvas || typeof Chart === 'undefined') return null;
+    const theme = chartTheme(canvas);
     return new Chart(canvas, {
         type: 'bar',
         data: { labels, datasets },
         options: {
             responsive: true,
             plugins: {
-                legend: { labels: { color: '#e5e7eb' } }
+                legend: { labels: { color: theme.legend } }
             },
             scales: {
-                x: { stacked, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-                y: { stacked, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+                x: { stacked, ticks: { color: theme.tick }, grid: { color: theme.grid } },
+                y: { stacked, ticks: { color: theme.tick }, grid: { color: theme.grid } }
             }
         }
     });
@@ -98,20 +108,21 @@ function renderBarChart(canvasId, labels, datasets, stacked = false) {
 
 function renderDoughnutChart(canvasId, labels, values) {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return null;
+    if (!canvas || typeof Chart === 'undefined') return null;
+    const theme = chartTheme(canvas);
     return new Chart(canvas, {
         type: 'doughnut',
         data: {
             labels,
             datasets: [{
                 data: values,
-                backgroundColor: ['#1f6feb', '#238636', '#da3633', '#bb8009', '#6b7280', '#8b5cf6'],
+                backgroundColor: ['#238636', '#da3633', '#d29922', '#8b949e', '#484f58', '#3fb950'],
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: { labels: { color: '#e5e7eb' } }
+                legend: { labels: { color: theme.legend } }
             }
         }
     });
@@ -177,17 +188,16 @@ function renderRecentEvents(events = []) {
 
 function renderTradeBotCharts(charts = {}) {
     destroyChart(cumulativeChart);
+    destroyChart(historyPnlChart);
     destroyChart(dailyChart);
     destroyChart(symbolChart);
     destroyChart(reasonsChart);
 
     const cumulative = charts.cumulative_pnl || [];
-    cumulativeChart = renderLineChart(
-        'trade-bot-cumulative-chart',
-        cumulative.map(item => toLocalDateTime(item.timestamp)),
-        cumulative.map(item => Number(item.cumulative_pnl_usd || 0)),
-        '#1f6feb'
-    );
+    const cumLabels = cumulative.map(item => toLocalDateTime(item.timestamp));
+    const cumValues = cumulative.map(item => Number(item.cumulative_pnl_usd || 0));
+    cumulativeChart = renderLineChart('trade-bot-cumulative-chart', cumLabels, cumValues, '#3fb950');
+    historyPnlChart = renderLineChart('trade-bot-history-pnl-chart', cumLabels, cumValues, '#3fb950');
 
     const daily = charts.daily_realized_pnl || [];
     dailyChart = renderBarChart(
@@ -214,7 +224,7 @@ function renderTradeBotCharts(charts = {}) {
     const reasons = charts.close_reasons || [];
     reasonsChart = renderDoughnutChart(
         'trade-bot-reasons-chart',
-        reasons.map(item => item.reason),
+        reasons.map(item => fmtCloseReason(item.reason)),
         reasons.map(item => item.count || 0)
     );
 }
@@ -232,15 +242,15 @@ function updateSummary(summary = {}) {
 
     if (realizedPnlEl) {
         realizedPnlEl.textContent = formatCurrency(summary.realized_pnl_usd);
-        realizedPnlEl.className = `tradebot-kpi-value ${getPnlClass(Number(summary.realized_pnl_usd || 0))}`;
+        realizedPnlEl.className = `tb-readout__value tabular-nums ${numSignClass(Number(summary.realized_pnl_usd || 0))}`;
     }
     if (avgPnlEl) avgPnlEl.textContent = `Média por trade: ${formatPercent(summary.avg_pnl_percent)}`;
     if (winRateEl) winRateEl.textContent = formatPercent(summary.win_rate);
     if (closedTradesEl) closedTradesEl.textContent = `${summary.closed_trades || 0} trades fechados`;
     if (activePositionsEl) activePositionsEl.textContent = String(summary.active_positions || 0);
     if (openPnlEl) {
-        openPnlEl.textContent = `P&L aberto: ${formatCurrency(summary.open_pnl_usd)}`;
-        openPnlEl.className = `tradebot-kpi-sub ${getPnlClass(Number(summary.open_pnl_usd || 0))}`;
+        openPnlEl.textContent = formatCurrency(summary.open_pnl_usd);
+        openPnlEl.className = `tb-readout__value tabular-nums ${numSignClass(Number(summary.open_pnl_usd || 0))}`;
     }
     const totalEntries = Number(summary.buy_entries || 0) + Number(summary.sell_entries || 0);
     if (entryTotalEl) entryTotalEl.textContent = String(totalEntries);
@@ -311,6 +321,8 @@ const _tbState = {
     openFilters: { q: '', side: '' },
     selectedOpenId: null,
     lastData: null,
+    sparklineCharts: {},
+    environment: null,
 };
 
 /* ---------- Utilitários ---------- */
@@ -334,6 +346,132 @@ function tradeOutcome(t) {
     if (pnl < 0) return 'loss';
     return 'flat';
 }
+
+/* ---------- Sparkline por posição (LightweightCharts) ---------- */
+function destroySparklines() {
+    Object.values(_tbState.sparklineCharts).forEach(chart => {
+        try { chart?.remove(); } catch (_) {}
+    });
+    _tbState.sparklineCharts = {};
+}
+
+async function renderPositionSparkline(container, pos) {
+    if (!container || typeof LightweightCharts === 'undefined') return;
+    const symbol = String(pos.symbol || '').replace('USDT', '');
+    if (!symbol) return;
+
+    const entry = Number(pos.entry_price || 0);
+    const sl = Number(pos.stop_loss || 0);
+    const tp = Number(pos.take_profit || 0);
+    const cur = Number(pos.current_price ?? entry);
+    const openedAt = pos.opened_at ? new Date(pos.opened_at).getTime() / 1000 : null;
+
+    try {
+        const candles = await fetchCandlestickData(symbol, '1h', 48);
+        if (!candles.length) return;
+
+        container.innerHTML = '';
+        const chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth || 220,
+            height: 72,
+            layout: {
+                background: { type: 'solid', color: 'transparent' },
+                textColor: '#8b949e',
+                fontSize: 9,
+            },
+            grid: {
+                vertLines: { visible: false },
+                horzLines: { visible: false },
+            },
+            rightPriceScale: { visible: false },
+            timeScale: { visible: false },
+            crosshair: { visible: false },
+            handleScroll: false,
+            handleScale: false,
+        });
+
+        // Candlestick series
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#3fb950',
+            downColor: '#f85149',
+            borderUpColor: '#3fb950',
+            borderDownColor: '#f85149',
+            wickUpColor: '#3fb950',
+            wickDownColor: '#f85149',
+            priceLineVisible: false,
+            lastValueVisible: false,
+        });
+        candleSeries.setData(candles);
+
+        // Marcador de entrada (seta para cima embaixo do candle de entrada)
+        if (openedAt) {
+            const entryCandle = candles.find(c => c.time >= openedAt) || candles[candles.length - 1];
+            if (entryCandle) {
+                candleSeries.setMarkers([{
+                    time: entryCandle.time,
+                    position: 'belowBar',
+                    color: '#d29922',
+                    shape: 'arrowUp',
+                    text: 'Entrada',
+                    size: 1,
+                }]);
+            }
+        }
+
+        // SL / TP / Entry como price lines
+        if (sl > 0) candleSeries.createPriceLine({ price: sl, color: '#f85149', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: false, title: '' });
+        if (tp > 0) candleSeries.createPriceLine({ price: tp, color: '#3fb950', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: false, title: '' });
+        if (entry > 0) candleSeries.createPriceLine({ price: entry, color: '#d29922', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: false, title: '' });
+
+        chart.timeScale().fitContent();
+        _tbState.sparklineCharts[pos.id || pos.symbol] = chart;
+    } catch (e) {
+        console.warn('sparkline fail', symbol, e);
+    }
+}
+const TB_CLOSE_REASONS = {
+    TAKE_PROFIT: 'Alvo atingido (take profit)',
+    STOP_LOSS: 'Stop loss',
+    REVERSAL: 'Sinal de venda da IA',
+    MANUAL: 'Fechamento manual',
+    MANUAL_CLOSE: 'Fechamento manual',
+    EMERGENCY_CLOSE: 'Fechamento emergencial',
+    PROTECTION_FAILED: 'Falha na proteção',
+    POSITION_NOT_FOUND: 'Posição não encontrada',
+    UNKNOWN: '—',
+};
+function fmtCloseReason(reason) {
+    if (!reason) return '—';
+    const key = String(reason).toUpperCase();
+    if (TB_CLOSE_REASONS[key]) return TB_CLOSE_REASONS[key];
+    if (key.endsWith('_ERROR')) return 'Erro no fechamento';
+    return String(reason);
+}
+function normalizePositionSide(side) {
+    const v = String(side || '').toLowerCase();
+    if (v === 'buy' || v === 'long') return 'buy';
+    if (v === 'sell' || v === 'short') return 'sell';
+    return '';
+}
+function tradeExitSide(t) {
+    if (t?.exit_side) return String(t.exit_side).toLowerCase();
+    const side = normalizePositionSide(t?.side);
+    if (side === 'buy') return 'sell';
+    if (side === 'sell') return 'buy';
+    return '';
+}
+function tradeCycleHtml(t) {
+    const entry = normalizePositionSide(t?.side) || 'buy';
+    const exit = tradeExitSide(t) || (entry === 'buy' ? 'sell' : 'buy');
+    return `
+      <span class="tb-cycle" title="Entrada ${entry.toUpperCase()} → saída ${exit.toUpperCase()} (posição fechada)">
+        <span class="tb-cycle__leg tb-cycle__leg--${entry}">${entry.toUpperCase()}</span>
+        <span class="tb-cycle__arrow" aria-hidden="true">→</span>
+        <span class="tb-cycle__leg tb-cycle__leg--${exit}">${exit.toUpperCase()}</span>
+      </span>
+      <div class="tb-cycle__hint">fechado</div>
+    `;
+}
 function downloadCSV(filename, rows) {
     if (!rows?.length) return;
     const headers = Object.keys(rows[0]);
@@ -351,14 +489,161 @@ function downloadCSV(filename, rows) {
 
 /* ---------- Tabs ---------- */
 function initTabs() {
-    const tabBtns = document.querySelectorAll('[data-tb-tab]');
+    const tabBtns = Array.from(document.querySelectorAll('[data-tb-tab]'));
     const tabPanels = document.querySelectorAll('[data-tb-panel]');
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const name = btn.dataset.tbTab;
-            tabBtns.forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
-            tabPanels.forEach(p => p.classList.toggle('active', p.dataset.tbPanel === name));
+    const page = document.getElementById('trade-bot-page');
+    const activate = (btn, focus = false) => {
+        const name = btn.dataset.tbTab;
+        tabBtns.forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+        tabPanels.forEach(p => p.classList.toggle('active', p.dataset.tbPanel === name));
+        if (page) page.dataset.activeTab = name;
+        if (focus) btn.focus();
+    };
+    tabBtns.forEach((btn, i) => {
+        btn.addEventListener('click', () => activate(btn));
+        btn.addEventListener('keydown', (e) => {
+            let next = null;
+            if (e.key === 'ArrowRight') next = tabBtns[(i + 1) % tabBtns.length];
+            else if (e.key === 'ArrowLeft') next = tabBtns[(i - 1 + tabBtns.length) % tabBtns.length];
+            else if (e.key === 'Home') next = tabBtns[0];
+            else if (e.key === 'End') next = tabBtns[tabBtns.length - 1];
+            if (next) { e.preventDefault(); activate(next, true); }
         });
+    });
+}
+
+/* ---------- Modo de operação (PAPER/REAL · mercado) ---------- */
+function fmtMarketMode(market) {
+    const m = String(market || '').toUpperCase();
+    if (m === 'FUTURES') return 'FUTUROS';
+    if (m === 'SPOT') return 'SPOT';
+    return m || '';
+}
+
+function applyModeBadge(badgeEl, labelEl, env) {
+    if (!badgeEl || !labelEl) return;
+    badgeEl.classList.remove('tb-mode-badge--paper', 'tb-mode-badge--real', 'tb-mode-badge--unknown');
+    const tradingRaw = String(env?.trading_mode || '').toUpperCase();
+    if (!env || !tradingRaw) {
+        badgeEl.classList.add('tb-mode-badge--unknown');
+        labelEl.textContent = 'Modo —';
+        badgeEl.title = 'Modo de operação indisponível — a API não informou o ambiente do bot.';
+        return;
+    }
+    // exchange_client.py: is_paper = TRADING_MODE == "PAPER" — qualquer outro valor opera de verdade
+    const isPaper = tradingRaw === 'PAPER';
+    const market = fmtMarketMode(env.market_mode);
+    badgeEl.classList.add(isPaper ? 'tb-mode-badge--paper' : 'tb-mode-badge--real');
+    labelEl.textContent = market ? `${tradingRaw} · ${market}` : tradingRaw;
+    badgeEl.title = isPaper
+        ? 'Modo simulação (TRADING_MODE=PAPER): nenhuma ordem vai para a Binance.'
+        : `MODO REAL (${tradingRaw}): ordens executam na Binance com saldo de verdade.`;
+}
+
+function fmtModeShort() {
+    const env = _tbState.environment;
+    const trading = String(env?.trading_mode || '').toUpperCase();
+    if (!trading) return '';
+    const market = fmtMarketMode(env.market_mode);
+    return market ? `${trading} · ${market}` : trading;
+}
+
+/* ---------- Banner persistente de comando (Logs & Eventos) ---------- */
+function pushCommandBanner({ level = 'warn', title = '', detail = '' } = {}) {
+    const container = document.getElementById('tb-command-banner');
+    if (!container) return;
+    const mode = fmtModeShort();
+    const stamp = new Date().toLocaleString('pt-BR');
+    const item = document.createElement('div');
+    item.className = `tb-cmd-banner__item tb-cmd-banner__item--${level}`;
+    item.setAttribute('role', 'status');
+    item.innerHTML = `
+        <span class="tb-cmd-banner__dot" aria-hidden="true"></span>
+        <div class="tb-cmd-banner__body">
+            <div class="tb-cmd-banner__title">${escapeHtml(title)}</div>
+            <div class="tb-cmd-banner__meta">${escapeHtml([detail, stamp, mode].filter(Boolean).join(' · '))}</div>
+        </div>
+        <button class="tb-cmd-banner__dismiss" type="button" aria-label="Dispensar aviso">&times;</button>
+    `;
+    item.querySelector('.tb-cmd-banner__dismiss')?.addEventListener('click', () => {
+        item.remove();
+        if (!container.querySelector('.tb-cmd-banner__item')) container.hidden = true;
+    });
+    container.prepend(item);
+    const items = container.querySelectorAll('.tb-cmd-banner__item');
+    for (let i = 3; i < items.length; i++) items[i].remove();
+    container.hidden = false;
+}
+
+/* ---------- Modal de confirmação de comando destrutivo ---------- */
+const _tbConfirm = { resolve: null, lastTrigger: null };
+
+function initConfirmModal() {
+    const modal = document.getElementById('tb-confirm-modal');
+    if (!modal) return;
+    const closeBtn = document.getElementById('tb-confirm-close');
+    const cancelBtn = document.getElementById('tb-confirm-cancel');
+    const acceptBtn = document.getElementById('tb-confirm-accept');
+
+    const settle = (accepted) => {
+        if (modal.classList.contains('hidden')) return;
+        modal.classList.add('hidden');
+        const resolve = _tbConfirm.resolve;
+        _tbConfirm.resolve = null;
+        const trigger = _tbConfirm.lastTrigger;
+        _tbConfirm.lastTrigger = null;
+        if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
+        if (resolve) resolve(accepted);
+    };
+
+    closeBtn?.addEventListener('click', () => settle(false));
+    cancelBtn?.addEventListener('click', () => settle(false));
+    acceptBtn?.addEventListener('click', () => settle(true));
+    modal.addEventListener('click', (e) => { if (e.target === modal) settle(false); });
+    document.addEventListener('keydown', (e) => {
+        if (modal.classList.contains('hidden')) return;
+        if (e.key === 'Escape') { e.preventDefault(); settle(false); return; }
+        if (e.key !== 'Tab') return;
+        const focusables = Array.from(modal.querySelectorAll('button:not(:disabled)'));
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+}
+
+function openTbConfirm({ title, stats = [], note = '', acceptLabel = 'Confirmar', trigger = null } = {}) {
+    const modal = document.getElementById('tb-confirm-modal');
+    if (!modal) return Promise.resolve(false);
+    const titleEl = document.getElementById('tb-confirm-title');
+    const statsEl = document.getElementById('tb-confirm-stats');
+    const noteEl = document.getElementById('tb-confirm-note');
+    const acceptBtn = document.getElementById('tb-confirm-accept');
+    const cancelBtn = document.getElementById('tb-confirm-cancel');
+
+    if (titleEl) titleEl.textContent = title || 'Confirmar comando';
+    if (acceptBtn) acceptBtn.textContent = acceptLabel;
+    if (noteEl) noteEl.textContent = note;
+    if (statsEl) {
+        statsEl.innerHTML = stats.map(([label, value, valueClass]) => `
+            <div>
+                <dt>${escapeHtml(label)}</dt>
+                <dd${valueClass ? ` class="${escapeHtml(valueClass)}"` : ''}>${escapeHtml(value)}</dd>
+            </div>
+        `).join('');
+    }
+    applyModeBadge(
+        document.getElementById('tb-confirm-mode-badge'),
+        document.getElementById('tb-confirm-mode-label'),
+        _tbState.environment
+    );
+
+    return new Promise((resolve) => {
+        _tbConfirm.resolve = resolve;
+        _tbConfirm.lastTrigger = trigger || document.activeElement;
+        modal.classList.remove('hidden');
+        (cancelBtn || acceptBtn)?.focus();
     });
 }
 
@@ -391,10 +676,8 @@ function setBotStatus(status, startedAt = null) {
         if (btnIcon) btnIcon.className = running ? 'fas fa-pause' : 'fas fa-play';
     }
     if (iconChip) {
-        iconChip.classList.toggle('icon-green', running);
-        iconChip.classList.toggle('icon-yellow', status === 'paused');
-        iconChip.classList.toggle('icon-red', status === 'error');
-        iconChip.classList.toggle('icon-blue', status === 'offline');
+        iconChip.classList.remove('tb-lamp--running', 'tb-lamp--paused', 'tb-lamp--offline', 'tb-lamp--error', 'icon-green', 'icon-yellow', 'icon-red', 'icon-blue');
+        iconChip.classList.add(`tb-lamp--${status}`);
     }
 }
 function updateUptime() {
@@ -425,22 +708,53 @@ function initMasterToggle() {
         }
     });
     emergency?.addEventListener('click', async () => {
-        if (!confirm('Confirma fechar TODAS as posições abertas imediatamente e pausar o bot?')) return;
+        const positions = Array.isArray(_tbState.activePositions) ? _tbState.activePositions : [];
+        const summary = _tbState.lastData?.summary || {};
+        const exposure = Number(summary.open_position_value_usd || 0)
+            || positions.reduce((sum, p) => sum + (Number(p.position_value_usd) || (Number(p.quantity || 0) * Number(p.current_price ?? p.entry_price ?? 0)) || 0), 0);
+        const openPnl = Number(summary.open_pnl_usd ?? positions.reduce((sum, p) => sum + Number(p.pnl_usd || 0), 0));
+
+        const accepted = await openTbConfirm({
+            title: 'Fechar todas as posições',
+            trigger: emergency,
+            stats: [
+                ['Posições abertas', String(positions.length)],
+                ['Exposição total', fmtUSD(exposure)],
+                ['P&L aberto', fmtUSD(openPnl), numSignClass(openPnl)],
+                ['Estado após', 'Bot pausado'],
+            ],
+            note: positions.length
+                ? 'O bot envia o fechamento imediato de TODAS as posições para a exchange e pausa novas entradas. O resultado fica registrado em Logs & Eventos.'
+                : 'Sem posições abertas no momento — este comando pausa o bot e impede novas entradas.',
+            acceptLabel: positions.length ? 'Fechar tudo agora' : 'Pausar bot',
+        });
+        if (!accepted) return;
+
         try {
             emergency.disabled = true;
             emergency.classList.add('opacity-75', 'cursor-not-allowed');
             const res = await emergencyCloseTradeBot();
             setBotStatus('paused');
-            showNotification(
-                res.queued
-                    ? 'Fechamento emergencial enfileirado. O bot vai zerar as posições na exchange e pausar novas entradas.'
-                    : `Fechamento emergencial executado. Posições encerradas: ${res.closed_positions ?? res.closed_count ?? 0}`,
-                'warning'
-            );
+            const msg = res.queued
+                ? 'Fechamento emergencial enfileirado. O bot vai zerar as posições na exchange e pausar novas entradas.'
+                : `Fechamento emergencial executado. Posições encerradas: ${res.closed_positions ?? res.closed_count ?? 0}`;
+            showNotification(msg, 'warning');
+            pushCommandBanner({
+                level: 'warn',
+                title: 'Fechamento emergencial',
+                detail: res.queued
+                    ? `Comando${res.command_id ? ` #${res.command_id}` : ''} enfileirado · ${positions.length} posiç${positions.length === 1 ? 'ão' : 'ões'} · exposição ${fmtUSD(exposure)} · bot pausado`
+                    : `Executado · ${res.closed_positions ?? res.closed_count ?? 0} posições encerradas · bot pausado`,
+            });
             await loadTradeBotDashboardPage();
         } catch (err) {
             console.error('Erro no fechamento emergencial:', err);
             showNotification(`Erro ao fechar posições: ${err.message || 'Falha na requisição'}`, 'error');
+            pushCommandBanner({
+                level: 'error',
+                title: 'Falha no fechamento emergencial',
+                detail: err.message || 'Falha na requisição',
+            });
         } finally {
             emergency.disabled = false;
             emergency.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -477,13 +791,10 @@ function openTradeDetailModal(trade) {
         ['Alcance/Compra', mkt.risk_on ? 'Risk ON' : (mkt.risk_on === false ? 'Risk OFF' : '—')],
     ];
 
-    title.textContent = `${trade.symbol || '—'} · ${String(trade.side || '').toUpperCase()}`;
+    title.textContent = `${trade.symbol || '—'} · ciclo fechado`;
     body.innerHTML = `
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="tb-side-pill ${String(trade.side || '').toLowerCase() === 'short' ? 'short' : 'long'}">
-          <i class="fas ${String(trade.side || '').toLowerCase() === 'short' ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
-          ${String(trade.side || 'LONG').toUpperCase()}
-        </span>
+        ${tradeCycleHtml(trade)}
         <span class="tb-pill-outcome ${outcome === 'flat' ? '' : outcome}">
           ${outcome === 'win' ? 'LUCRO' : outcome === 'loss' ? 'PREJUÍZO' : 'EMPATE'}
         </span>
@@ -491,7 +802,7 @@ function openTradeDetailModal(trade) {
       </div>
       <div class="tb-modal-grid">
         <div class="stat"><div class="lbl">Preço Entrada</div><div class="val">${fmtUSD(trade.entry_price)}</div></div>
-        <div class="stat"><div class="lbl">Preço Saída</div><div class="val">${fmtUSD(trade.exit_price ?? trade.current_price)}</div></div>
+        <div class="stat"><div class="lbl">Preço Saída</div><div class="val">${Number(trade.exit_price || trade.current_price || 0) > 0 ? fmtUSD(trade.exit_price ?? trade.current_price) : '—'}</div></div>
         <div class="stat"><div class="lbl">Stop Loss</div><div class="val">${fmtUSD(trade.stop_loss)}</div></div>
         <div class="stat"><div class="lbl">Take Profit</div><div class="val">${fmtUSD(trade.take_profit)}</div></div>
         <div class="stat"><div class="lbl">P&amp;L (USD)</div><div class="val ${numSignClass(pnl)}">${fmtUSD(pnl)}</div></div>
@@ -499,7 +810,7 @@ function openTradeDetailModal(trade) {
         <div class="stat"><div class="lbl">Aberto em</div><div class="val" style="font-size:.9rem;font-weight:600;">${toLocalDateTime(trade.opened_at)}</div></div>
         <div class="stat"><div class="lbl">Fechado em</div><div class="val" style="font-size:.9rem;font-weight:600;">${toLocalDateTime(trade.closed_at || trade.exit_at) || '—'}</div></div>
         <div class="stat"><div class="lbl">Duração</div><div class="val">${duration}</div></div>
-        <div class="stat"><div class="lbl">Motivo Saída</div><div class="val" style="font-size:.9rem;font-weight:600;">${escapeHtml(trade.exit_reason || trade.close_reason || '—')}</div></div>
+        <div class="stat"><div class="lbl">Motivo Saída</div><div class="val" style="font-size:.9rem;font-weight:600;">${escapeHtml(fmtCloseReason(trade.exit_reason || trade.close_reason))}</div></div>
       </div>
 
       ${mkt && Object.keys(mkt).length ? `
@@ -520,7 +831,7 @@ function openTradeDetailModal(trade) {
 /* ---------- Tabela: posições abertas (RICA, com barra TP/SL) ---------- */
 function renderOpenPositionsRich(positions = []) {
     const container = document.getElementById('trade-bot-open-positions');
-    if (!container) return;
+    const tabContainer = document.getElementById('trade-bot-open-positions-tab');
     _tbState.activePositions = positions;
 
     const side = (_tbState.openFilters.side || '').toUpperCase();
@@ -539,16 +850,12 @@ function renderOpenPositionsRich(positions = []) {
     const subEl = document.getElementById('tb-open-pnl-sub');
     if (subEl) subEl.textContent = `${positions.length} posiç${positions.length === 1 ? 'ão' : 'ões'} ativa${positions.length === 1 ? '' : 's'}`;
 
-    if (!filtered.length) {
-        container.innerHTML = `<p class="text-gray-400 text-center py-8">${positions.length === 0 ? 'Nenhuma posição aberta.' : 'Nenhuma posição corresponde ao filtro.'}</p>`;
-        renderOpenDetailPanel(null);
-        return;
-    }
-
-    container.innerHTML = `
+    const emptyHtml = `<p class="text-gray-400 text-center py-8">${positions.length === 0 ? 'Nenhuma posição aberta.' : 'Nenhuma posição corresponde ao filtro.'}</p>`;
+    const tableHtml = !filtered.length ? emptyHtml : `
       <table class="tb-open-table">
         <thead><tr>
           <th>Ativo</th><th>Lado</th><th>Entrada / Atual</th>
+          <th>Preço (48h)</th>
           <th>Progresso SL → TP</th>
           <th>P&amp;L</th><th>Aberto há</th><th></th>
         </tr></thead>
@@ -567,7 +874,7 @@ function renderOpenPositionsRich(positions = []) {
                 const distSL = Math.abs(cur - sl);
                 if (total > 0) progress = Math.max(0, Math.min(1, distSL / total));
             }
-            const selected = _tbState.selectedOpenId === p.id || (_tbState.selectedOpenId == null && filtered.indexOf(p) === 0);
+            const selected = _tbState.selectedOpenId === p.id;
             if (selected) _tbState.selectedOpenId = p.id;
             const openDur = p.opened_at ? fmtDurationMs(Date.now() - new Date(p.opened_at).getTime()) : '—';
             return `
@@ -585,6 +892,9 @@ function renderOpenPositionsRich(positions = []) {
                     <div><span class="text-gray-400">Ent: </span>${fmtUSD(entry)}</div>
                     <div><span class="text-gray-400">Atu: </span><span class="${numSignClass(cur - entry)}">${fmtUSD(cur)}</span></div>
                   </div>
+                </td>
+                <td>
+                  <div class="tb-sparkline" data-spark-symbol="${escapeHtml(p.symbol || '')}"></div>
                 </td>
                 <td>
                   <div class="tb-tpsl">
@@ -613,85 +923,134 @@ function renderOpenPositionsRich(positions = []) {
       </table>
     `;
 
-    const firstSelected = filtered.find(p => (_tbState.selectedOpenId === p.id) || !_tbState.selectedOpenId);
-    renderOpenDetailPanel(firstSelected || null);
+    if (container) container.innerHTML = tableHtml;
+    if (tabContainer) tabContainer.innerHTML = tableHtml;
 
-    container.querySelectorAll('tbody tr').forEach(row => {
-        row.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-action]');
-            const idx = Number(row.dataset.posIndex || 0);
-            const pos = filtered[idx];
-            if (btn) {
-                const action = btn.dataset.action;
-                if (action === 'detail') openTradeDetailModal(pos);
-                if (action === 'close' && confirm(`Fechar ${pos?.symbol} imediatamente?`)) {
-                    closeTradeBotPosition(pos.symbol).then(async (res) => {
-                        showNotification(res.queued ? `Fechamento de ${pos.symbol} enfileirado.` : 'Solicitação enviada.', 'info');
-                        await loadTradeBotDashboardPage();
-                    }).catch((err) => {
-                        showNotification(`Erro ao fechar ${pos?.symbol}: ${err.message || 'Falha na requisição'}`, 'error');
-                    });
+    // Render sparklines após o DOM estar pronto
+    destroySparklines();
+    filtered.forEach(p => {
+        const el = document.querySelector(`.tb-sparkline[data-spark-symbol="${CSS.escape(p.symbol || '')}"]`);
+        if (el) renderPositionSparkline(el, p);
+    });
+
+    // Não seleciona automaticamente — espera o usuário clicar
+    renderOpenDetailPanel(null);
+
+    [container, tabContainer].forEach(c => {
+        if (!c) return;
+        c.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                const idx = Number(row.dataset.posIndex || 0);
+                const pos = filtered[idx];
+                if (btn) {
+                    const action = btn.dataset.action;
+                    if (action === 'detail') openTradeDetailModal(pos);
+                    if (action === 'close') {
+                        const posPnl = Number(pos?.pnl_usd || 0);
+                        openTbConfirm({
+                            title: `Fechar ${pos?.symbol || 'posição'}`,
+                            trigger: btn,
+                            stats: [
+                                ['Lado', String(pos?.side || 'LONG').toUpperCase()],
+                                ['Entrada', fmtUSD(Number(pos?.entry_price || 0))],
+                                ['Atual', fmtUSD(Number(pos?.current_price ?? pos?.entry_price ?? 0))],
+                                ['P&L aberto', fmtUSD(posPnl), numSignClass(posPnl)],
+                            ],
+                            note: 'A posição é fechada a mercado na exchange. O bot segue operando os demais pares.',
+                            acceptLabel: 'Fechar posição',
+                        }).then(async (accepted) => {
+                            if (!accepted) return;
+                            try {
+                                const res = await closeTradeBotPosition(pos.symbol);
+                                showNotification(res.queued ? `Fechamento de ${pos.symbol} enfileirado.` : 'Solicitação enviada.', 'info');
+                                pushCommandBanner({
+                                    level: 'warn',
+                                    title: `Fechar ${pos.symbol}`,
+                                    detail: res.queued
+                                        ? `Comando${res.command_id ? ` #${res.command_id}` : ''} enfileirado · P&L aberto ${fmtUSD(posPnl)}`
+                                        : 'Solicitação enviada à exchange',
+                                });
+                                await loadTradeBotDashboardPage();
+                            } catch (err) {
+                                showNotification(`Erro ao fechar ${pos?.symbol}: ${err.message || 'Falha na requisição'}`, 'error');
+                                pushCommandBanner({
+                                    level: 'error',
+                                    title: `Falha ao fechar ${pos?.symbol}`,
+                                    detail: err.message || 'Falha na requisição',
+                                });
+                            }
+                        });
+                    }
+                    if (action === 'tp') showNotification('Edição de TP/SL será integrada ao backend em breve.', 'info');
+                    return;
                 }
-                if (action === 'tp') showNotification('Edição de TP/SL será integrada ao backend em breve.', 'info');
-                return;
-            }
-            _tbState.selectedOpenId = pos?.id ?? null;
-            container.querySelectorAll('tbody tr').forEach(r => r.classList.toggle('tb-row-selected', r === row));
-            renderOpenDetailPanel(pos);
+                _tbState.selectedOpenId = pos?.id ?? null;
+                // Sincroniza seleção em ambas as tabelas
+                [container, tabContainer].forEach(cc => {
+                    cc?.querySelectorAll('tbody tr').forEach(r => {
+                        r.classList.toggle('tb-row-selected', r.dataset.id === String(pos?.id || pos?.symbol));
+                    });
+                });
+                renderOpenDetailPanel(pos);
+            });
         });
     });
 }
 /* ---------- Open detail panel (lado direito) ---------- */
 function renderOpenDetailPanel(pos) {
     const el = document.getElementById('tb-open-detail');
-    if (!el) return;
-    if (!pos) {
-        el.innerHTML = `<p class="text-sm text-gray-400 text-center py-10">Selecione uma posição para ver o contexto completo, gráfico de entrada e situação do mercado no momento do trade.</p>`;
-        return;
-    }
-    const entry = Number(pos.entry_price || 0);
-    const cur = Number(pos.current_price ?? pos.exit_price ?? entry);
-    const sl = Number(pos.stop_loss || 0);
-    const tp = Number(pos.take_profit || 0);
-    const pnl = Number(pos.pnl_usd || 0);
-    const pnlPct = Number(pos.pnl_percent || 0);
-    const mkt = pos.market_context || {};
-    const chips = [
-        ['Fear & Greed', mkt.fear_and_greed != null ? `${mkt.fear_and_greed}` : '—'],
-        ['BTC 24h',     mkt.btc_change_24h != null ? `${(+mkt.btc_change_24h).toFixed(2)}%` : '—'],
-        ['Volatilidade', mkt.volatility != null ? `${(+mkt.volatility).toFixed(2)}%` : '—'],
-        ['Tendência',    mkt.trend || '—'],
-    ];
-    const rr = sl && tp ? `1:${(Math.abs(tp - entry) / Math.max(0.0001, Math.abs(entry - sl))).toFixed(2)}` : '—';
-    el.innerHTML = `
-      <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <span class="text-lg font-bold">${escapeHtml(pos.symbol || '—')}</span>
-        <span class="tb-side-pill ${String(pos.side || '').toLowerCase() === 'short' ? 'short' : 'long'}">${String(pos.side || 'LONG').toUpperCase()}</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2 mb-4">
-        <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Entrada</span><span class="tb-adv-kpi__value tabular-nums">${fmtUSD(entry)}</span></div>
-        <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Atual</span><span class="tb-adv-kpi__value tabular-nums ${numSignClass(cur-entry)}">${fmtUSD(cur)}</span></div>
-        <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Stop Loss</span><span class="tb-adv-kpi__value tabular-nums" style="color:#f85149;">${fmtUSD(sl)}</span></div>
-        <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Take Profit</span><span class="tb-adv-kpi__value tabular-nums" style="color:#3fb950;">${fmtUSD(tp)}</span></div>
-        <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">P&amp;L</span><span class="tb-adv-kpi__value tabular-nums ${numSignClass(pnl)}">${fmtUSD(pnl)}</span></div>
-        <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Risco/Retorno</span><span class="tb-adv-kpi__value tabular-nums">${rr}</span></div>
-      </div>
-      <div class="tb-modal-section-title" style="margin-top:.25rem;">PnL (%)</div>
-      <div class="mb-4 font-bold text-xl tabular-nums ${numSignClass(pnlPct)}">${fmtPct(pnlPct)}</div>
-      <div class="tb-modal-section-title">Mercado (momento entrada)</div>
-      <div class="space-y-2 mb-4">
-        ${chips.map(([l,v]) => `<div class="tb-mkt-row tb-mkt-chip"><span class="lbl" style="font-size:.65rem;text-transform:uppercase;letter-spacing:.03em;color:#8b949e;font-weight:600;">${l}</span><span class="val" style="font-weight:700;font-variant-numeric:tabular-nums;">${escapeHtml(String(v))}</span></div>`).join('')}
-      </div>
-      <div class="tb-modal-section-title">Razão</div>
-      <p class="text-sm text-gray-300 leading-relaxed mb-4">${escapeHtml(pos.rationale || pos.signal_reason || 'Sinal gerado automaticamente pela estratégia configurada.')}</p>
-      <div class="flex gap-2 flex-wrap">
-        <button class="tb-btn tb-btn--primary rounded-lg text-sm px-3 py-2 w-full justify-center" data-tb-open-modal-from-panel="1">
-          <i class="fas fa-expand"></i> Abrir detalhes completos
-        </button>
-      </div>
-    `;
-    const detailBtn = el.querySelector('[data-tb-open-modal-from-panel]');
-    detailBtn?.addEventListener('click', () => openTradeDetailModal(pos), { once: true });
+    const elTab = document.getElementById('tb-open-detail-tab');
+    const html = !pos
+        ? `<p class="text-sm text-gray-400 text-center py-10">Selecione uma posição para ver o contexto completo, gráfico de entrada e situação do mercado no momento do trade.</p>`
+        : (() => {
+            const entry = Number(pos.entry_price || 0);
+            const cur = Number(pos.current_price ?? pos.exit_price ?? entry);
+            const sl = Number(pos.stop_loss || 0);
+            const tp = Number(pos.take_profit || 0);
+            const pnl = Number(pos.pnl_usd || 0);
+            const pnlPct = Number(pos.pnl_percent || 0);
+            const mkt = pos.market_context || {};
+            const chips = [
+                ['Fear & Greed', mkt.fear_and_greed != null ? `${mkt.fear_and_greed}` : '—'],
+                ['BTC 24h',     mkt.btc_change_24h != null ? `${(+mkt.btc_change_24h).toFixed(2)}%` : '—'],
+                ['Volatilidade', mkt.volatility != null ? `${(+mkt.volatility).toFixed(2)}%` : '—'],
+                ['Tendência',    mkt.trend || '—'],
+            ];
+            const rr = sl && tp ? `1:${(Math.abs(tp - entry) / Math.max(0.0001, Math.abs(entry - sl))).toFixed(2)}` : '—';
+            return `
+              <div class="flex items-center gap-2 mb-4 flex-wrap">
+                <span class="text-lg font-bold">${escapeHtml(pos.symbol || '—')}</span>
+                <span class="tb-side-pill ${String(pos.side || '').toLowerCase() === 'short' ? 'short' : 'long'}">${String(pos.side || 'LONG').toUpperCase()}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Entrada</span><span class="tb-adv-kpi__value tabular-nums">${fmtUSD(entry)}</span></div>
+                <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Atual</span><span class="tb-adv-kpi__value tabular-nums ${numSignClass(cur-entry)}">${fmtUSD(cur)}</span></div>
+                <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Stop Loss</span><span class="tb-adv-kpi__value tabular-nums" style="color:#f85149;">${fmtUSD(sl)}</span></div>
+                <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Take Profit</span><span class="tb-adv-kpi__value tabular-nums" style="color:#3fb950;">${fmtUSD(tp)}</span></div>
+                <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">P&amp;L</span><span class="tb-adv-kpi__value tabular-nums ${numSignClass(pnl)}">${fmtUSD(pnl)}</span></div>
+                <div class="tb-adv-kpi" style="padding:.6rem .7rem;"><span class="tb-adv-kpi__label">Risco/Retorno</span><span class="tb-adv-kpi__value tabular-nums">${rr}</span></div>
+              </div>
+              <div class="tb-modal-section-title" style="margin-top:.25rem;">PnL (%)</div>
+              <div class="mb-4 font-bold text-xl tabular-nums ${numSignClass(pnlPct)}">${fmtPct(pnlPct)}</div>
+              <div class="tb-modal-section-title">Mercado (momento entrada)</div>
+              <div class="space-y-2 mb-4">
+                ${chips.map(([l,v]) => `<div class="tb-mkt-row tb-mkt-chip"><span class="lbl" style="font-size:.65rem;text-transform:uppercase;letter-spacing:.03em;color:#8b949e;font-weight:600;">${l}</span><span class="val" style="font-weight:700;font-variant-numeric:tabular-nums;">${escapeHtml(String(v))}</span></div>`).join('')}
+              </div>
+              <div class="tb-modal-section-title">Razão</div>
+              <p class="text-sm text-gray-300 leading-relaxed mb-4">${escapeHtml(pos.rationale || pos.signal_reason || 'Sinal gerado automaticamente pela estratégia configurada.')}</p>
+              <div class="flex gap-2 flex-wrap">
+                <button class="tb-btn tb-btn--primary rounded-lg text-sm px-3 py-2 w-full justify-center" data-tb-open-modal-from-panel="1">
+                  <i class="fas fa-expand"></i> Abrir detalhes completos
+                </button>
+              </div>
+            `;
+        })();
+    if (el) el.innerHTML = html;
+    if (elTab) elTab.innerHTML = html;
+    [el, elTab].forEach(target => {
+        target?.querySelector('[data-tb-open-modal-from-panel]')?.addEventListener('click', () => openTradeDetailModal(pos), { once: true });
+    });
 }
 
 /* ---------- Tabela: Histórico ---------- */
@@ -706,14 +1065,14 @@ function getSortedFilteredHistory() {
             String(t.side || '').toLowerCase().includes(q)
         );
     }
-    if (f.side) arr = arr.filter(t => String(t.side || '').toUpperCase() === f.side.toUpperCase());
+    if (f.side) arr = arr.filter(t => normalizePositionSide(t.side) === normalizePositionSide(f.side));
     if (f.outcome) arr = arr.filter(t => tradeOutcome(t) === f.outcome);
     switch (f.sort) {
-        case 'opened_asc':  arr.sort((a,b) => new Date(a.opened_at||0) - new Date(b.opened_at||0)); break;
+        case 'opened_asc':  arr.sort((a,b) => new Date(a.closed_at||a.opened_at||0) - new Date(b.closed_at||b.opened_at||0)); break;
         case 'pnl_desc':    arr.sort((a,b) => Number(b.realized_pnl_usd ?? b.pnl_usd ?? 0) - Number(a.realized_pnl_usd ?? a.pnl_usd ?? 0)); break;
         case 'pnl_asc':     arr.sort((a,b) => Number(a.realized_pnl_usd ?? a.pnl_usd ?? 0) - Number(b.realized_pnl_usd ?? b.pnl_usd ?? 0)); break;
         case 'opened_desc':
-        default: arr.sort((a,b) => new Date(b.opened_at||0) - new Date(a.opened_at||0));
+        default: arr.sort((a,b) => new Date(b.closed_at||b.opened_at||0) - new Date(a.closed_at||a.opened_at||0));
     }
     return arr;
 }
@@ -743,8 +1102,8 @@ function renderHistoryTable() {
     container.innerHTML = `
       <table class="tb-hist-table">
         <thead><tr>
-          <th>Ativo</th><th>Lado</th><th>Aberto</th><th>Fechado</th>
-          <th>Entrada</th><th>Saída</th><th>Motivo</th>
+          <th>Ativo</th><th>Ciclo</th><th>Aberto</th><th>Fechado</th>
+          <th>Entrada → Saída</th><th>Motivo</th>
           <th>P&amp;L</th><th>%</th><th></th>
         </tr></thead>
         <tbody>
@@ -752,15 +1111,19 @@ function renderHistoryTable() {
             const outcome = tradeOutcome(t);
             const pnl = Number(t.realized_pnl_usd ?? t.pnl_usd ?? 0);
             const pnlPct = Number(t.realized_pnl_percent ?? t.pnl_percent ?? 0);
+            const exitPx = Number(t.exit_price || 0);
             return `
               <tr data-id="${escapeHtml(t.id || t.symbol + (t.opened_at||''))}">
                 <td><span class="font-semibold">${escapeHtml(t.symbol || '—')}</span></td>
-                <td><span class="tb-side-pill ${String(t.side || '').toLowerCase() === 'short' ? 'short' : 'long'}">${String(t.side || 'LONG').toUpperCase()}</span></td>
+                <td>${tradeCycleHtml(t)}</td>
                 <td class="text-gray-400 text-xs tabular-nums">${toLocalDateTime(t.opened_at)}</td>
                 <td class="text-gray-400 text-xs tabular-nums">${toLocalDateTime(t.closed_at || t.exit_at) || '—'}</td>
-                <td class="tabular-nums">${fmtUSD(t.entry_price)}</td>
-                <td class="tabular-nums">${fmtUSD(t.exit_price)}</td>
-                <td class="text-xs text-gray-300">${escapeHtml(t.exit_reason || t.close_reason || '—')}</td>
+                <td class="tabular-nums text-sm">
+                  <span class="text-gray-400">${fmtUSD(t.entry_price)}</span>
+                  <span class="tb-cycle__arrow">→</span>
+                  <span class="${exitPx > 0 ? '' : 'text-gray-500'}">${exitPx > 0 ? fmtUSD(exitPx) : '—'}</span>
+                </td>
+                <td class="text-xs text-gray-300">${escapeHtml(fmtCloseReason(t.exit_reason || t.close_reason))}</td>
                 <td class="tabular-nums font-bold ${numSignClass(pnl)}">${fmtUSD(pnl)}</td>
                 <td class="tabular-nums font-semibold ${numSignClass(pnlPct)}">${fmtPct(pnlPct)}</td>
                 <td class="text-right"><button class="tb-action-btn" data-action="detail" title="Ver detalhes"><i class="fas fa-eye"></i></button></td>
@@ -790,6 +1153,8 @@ function initHistoryFilters() {
     const next = document.getElementById('tb-hist-next');
     const openQ = document.getElementById('tb-open-search');
     const openSide = document.getElementById('tb-open-filter-side');
+    const openQTab = document.getElementById('tb-open-search-tab');
+    const openSideTab = document.getElementById('tb-open-filter-side-tab');
     const onChange = () => {
         _tbState.historyFilters.q = q?.value || '';
         _tbState.historyFilters.side = side?.value || '';
@@ -799,8 +1164,8 @@ function initHistoryFilters() {
         renderHistoryTable();
     };
     const onChangeOpen = () => {
-        _tbState.openFilters.q = openQ?.value || '';
-        _tbState.openFilters.side = openSide?.value || '';
+        _tbState.openFilters.q = openQ?.value || openQTab?.value || '';
+        _tbState.openFilters.side = openSide?.value || openSideTab?.value || '';
         renderOpenPositionsRich(_tbState.activePositions);
     };
     q?.addEventListener('input', onChange);
@@ -809,6 +1174,8 @@ function initHistoryFilters() {
     sort?.addEventListener('change', onChange);
     openQ?.addEventListener('input', onChangeOpen);
     openSide?.addEventListener('change', onChangeOpen);
+    openQTab?.addEventListener('input', onChangeOpen);
+    openSideTab?.addEventListener('change', onChangeOpen);
     prev?.addEventListener('click', () => { if (_tbState.historyFilters.page > 1) { _tbState.historyFilters.page--; renderHistoryTable(); }});
     next?.addEventListener('click', () => { _tbState.historyFilters.page++; renderHistoryTable(); });
     exp?.addEventListener('click', () => {
@@ -1013,7 +1380,8 @@ function renderDrawdownChart(cumulative = []) {
     });
     if (stamp) stamp.textContent = `Máx: ${maxDD.toFixed(2)}%`;
     const el = document.getElementById('trade-bot-drawdown-chart');
-    if (!el) return;
+    if (!el || typeof Chart === 'undefined') return;
+    const theme = chartTheme(el);
     drawdownChart = new Chart(el, {
         type: 'line',
         data: {
@@ -1021,7 +1389,7 @@ function renderDrawdownChart(cumulative = []) {
             datasets: [{
                 data: ddPct,
                 borderColor: '#da3633',
-                backgroundColor: 'rgba(218, 54, 51, 0.2)',
+                backgroundColor: 'rgba(218, 54, 51, 0.16)',
                 fill: true, tension: 0.2, pointRadius: 0,
             }]
         },
@@ -1029,8 +1397,8 @@ function renderDrawdownChart(cumulative = []) {
             responsive: true,
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `Drawdown: ${Number(c.parsed.y||0).toFixed(2)}%` } } },
             scales: {
-                x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-                y: { ticks: { color: '#8b949e', callback: (v) => `${Number(v||0).toFixed(1)}%` }, grid: { color: '#30363d' }, reverse: false }
+                x: { ticks: { color: theme.tick }, grid: { color: theme.grid } },
+                y: { ticks: { color: theme.tick, callback: (v) => `${Number(v||0).toFixed(1)}%` }, grid: { color: theme.grid }, reverse: false }
             }
         }
     });
@@ -1057,26 +1425,26 @@ function updateSummaryEnhanced(summary = {}, tradesClosed = []) {
     const exposure = Number(summary.exposure_usd || summary.open_notional || 0);
 
     const elPnl = document.getElementById('trade-bot-realized-pnl');
-    if (elPnl) { elPnl.className = `tradebot-kpi-value tabular-nums ${numSignClass(realized)}`; }
+    if (elPnl) { elPnl.className = `tb-readout__value tabular-nums ${numSignClass(realized)}`; }
 
     const oPnlEl = document.getElementById('trade-bot-open-pnl');
     if (oPnlEl) {
         const v = Number(summary.open_pnl_usd || 0);
         oPnlEl.textContent = fmtUSD(v);
-        oPnlEl.className = `tradebot-kpi-value tabular-nums ${numSignClass(v)}`;
+        oPnlEl.className = `tb-readout__value tabular-nums ${numSignClass(v)}`;
     }
 
     const pf = document.getElementById('tb-profit-factor');
-    if (pf) { pf.textContent = profitFactor.toFixed(2); pf.className = `tradebot-kpi-value tabular-nums ${profitFactor >= 1.5 ? 'num-up' : profitFactor >= 1 ? 'num-flat' : 'num-down'}`; }
+    if (pf) { pf.textContent = profitFactor.toFixed(2); pf.className = `tb-readout__value tabular-nums ${profitFactor >= 1.5 ? 'num-up' : profitFactor >= 1 ? 'num-flat' : 'num-down'}`; }
 
     const md = document.getElementById('tb-max-drawdown');
-    if (md) { md.textContent = fmtPct(maxDD); md.className = `tradebot-kpi-value tabular-nums ${maxDD <= 5 ? 'num-flat' : maxDD <= 15 ? 'num-up' : 'num-down'}`; }
+    if (md) { md.textContent = fmtPct(maxDD); md.className = `tb-readout__value tabular-nums ${maxDD <= 5 ? 'num-flat' : maxDD <= 15 ? 'num-warn' : 'num-down'}`; }
     if (document.getElementById('tb-max-dd-sub') && summary.max_drawdown_date) {
         document.getElementById('tb-max-dd-sub').textContent = `em ${toLocalDateTime(summary.max_drawdown_date).split(' ')[0]}`;
     }
 
     const exp = document.getElementById('tb-expectancy');
-    if (exp) { exp.textContent = fmtUSD(expectancy); exp.className = `tradebot-kpi-value tabular-nums ${numSignClass(expectancy)}`; }
+    if (exp) { exp.textContent = fmtUSD(expectancy); exp.className = `tb-readout__value tabular-nums ${numSignClass(expectancy)}`; }
 
     const actSub = document.getElementById('tb-active-sub');
     if (actSub) actSub.textContent = `Expostas: ${fmtUSD(exposure)}`;
@@ -1228,12 +1596,62 @@ function initBotConfigModal() {
     });
 }
 
+/* ---------- Últimos trades (sidebar) ---------- */
+function renderRecentTrades(closed = []) {
+    const container = document.getElementById('tb-recent-trades');
+    const countEl = document.getElementById('tb-recent-count');
+    if (!container) return;
+    const recent = closed.slice(0, 8);
+    if (countEl) countEl.textContent = String(recent.length);
+    if (!recent.length) {
+        container.innerHTML = `<p class="tb-empty">Trades fechados recentes aparecem aqui.</p>`;
+        return;
+    }
+    container.innerHTML = recent.map(t => {
+        const pnl = Number(t.realized_pnl_usd ?? t.pnl_usd ?? 0);
+        const pnlPct = Number(t.realized_pnl_percent ?? t.pnl_percent ?? 0);
+        const outcome = tradeOutcome(t);
+        return `
+          <div class="tb-recent__item" data-id="${escapeHtml(t.id || '')}">
+            <div>
+              <div class="tb-recent__sym">${escapeHtml(t.symbol || '—')}</div>
+              <div class="tb-recent__meta">${toLocalDateTime(t.closed_at || t.exit_at).split(' ')[0]}</div>
+            </div>
+            <div>
+              <div class="tb-recent__reason">${escapeHtml(fmtCloseReason(t.exit_reason || t.close_reason))}</div>
+            </div>
+            <div class="tb-recent__pnl ${numSignClass(pnl)}">
+              <div>${fmtUSD(pnl)}</div>
+              <div class="tb-recent__pnl-pct ${numSignClass(pnlPct)}">${fmtPct(pnlPct)}</div>
+            </div>
+          </div>
+        `;
+    }).join('');
+    container.querySelectorAll('.tb-recent__item').forEach((el, i) => {
+        el.addEventListener('click', () => openTradeDetailModal(recent[i]));
+    });
+}
+
 /* ---------- Merge histórico (tenta extrair do payload de várias formas) ---------- */
+function repairExitPrice(t) {
+    const exit = Number(t.exit_price || 0);
+    if (exit > 0) return t;
+    const entry = Number(t.entry_price || 0);
+    const qty = Number(t.quantity || 0);
+    const pnl = Number(t.realized_pnl_usd ?? t.pnl_usd ?? 0);
+    const side = normalizePositionSide(t.side);
+    if (!(entry > 0 && qty > 0 && pnl !== 0 && side)) return t;
+    const inferred = side === 'buy' ? entry + (pnl / qty) : entry - (pnl / qty);
+    return { ...t, exit_price: inferred, exit_side: t.exit_side || (side === 'buy' ? 'sell' : 'buy') };
+}
 function extractClosedTrades(data) {
-    if (Array.isArray(data?.closed_trades) && data.closed_trades.length) return data.closed_trades;
-    if (Array.isArray(data?.history) && data.history.length) return data.history;
-    if (Array.isArray(data?.trades) && data.trades.length) return data.trades.filter(t => t.closed_at || t.exit_at || t.realized_pnl_usd != null);
-    return [];
+    let arr = [];
+    if (Array.isArray(data?.closed_trades) && data.closed_trades.length) arr = data.closed_trades;
+    else if (Array.isArray(data?.history) && data.history.length) arr = data.history;
+    else if (Array.isArray(data?.trades) && data.trades.length) {
+        arr = data.trades.filter(t => t.closed_at || t.exit_at || t.realized_pnl_usd != null);
+    }
+    return arr.map(repairExitPrice);
 }
 
 /* ---------- Inicialização geral ---------- */
@@ -1244,6 +1662,7 @@ function initTradeBotUI() {
     initMasterToggle();
     initModal();
     initBotConfigModal();
+    initConfirmModal();
     initHistoryFilters();
 }
 
@@ -1277,9 +1696,17 @@ export async function loadTradeBotDashboardPage() {
     setBotStatus(data.bot_status === 'running' ? 'running' : data.bot_status === 'paused' ? 'paused' : data.bot_status === 'error' ? 'error' : 'offline',
                  data.bot_started_at ? new Date(data.bot_started_at) : null);
 
+    _tbState.environment = data?.environment || null;
+    applyModeBadge(
+        document.getElementById('tb-mode-badge'),
+        document.getElementById('tb-mode-badge-label'),
+        _tbState.environment
+    );
+
     updateSummaryEnhanced(data.summary, closed);
     renderTradeBotChartsEnhanced(data.charts || {});
     renderOpenPositionsRich(active);
+    renderRecentTrades(closed);
     renderHistoryTable();
     renderTimelineEvents(Array.isArray(data.recent_events) ? data.recent_events : []);
     renderAdvancedKpis(closed);

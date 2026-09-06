@@ -2,7 +2,7 @@ import { CONFIG } from './config.js?v=20260828a';
 import { state } from './state.js?v=20260828a';
 import { fetchData } from './api.js?v=20260828a';
 import { loadLightweightChart } from './chart.js?v=20260828a';
-import { loadCryptoRecommendation, showPage } from './ui.js?v=20260828a';
+import { loadCryptoRecommendation, showPage } from './ui.js?v=20260905hard';
 import { formatCurrency, formatLargeNumber, setImageWithFallback } from './utils.js?v=20260828a';
 
 /**

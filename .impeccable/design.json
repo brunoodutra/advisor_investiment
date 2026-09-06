@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-02T03:18:00.000Z",
+  "title": "Design System: Trade Bot HMI",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Night Charcoal",
+        "canonical": "#121411",
+        "tonalRamp": ["#0a0b09", "#121411", "#1a1c16", "#2c2e28", "#3f4238", "#5a574c", "#8a8678", "#c9c4b4"]
+      },
+      "bezel": {
+        "role": "neutral",
+        "displayName": "Olive Bezel",
+        "canonical": "#2c2e28",
+        "tonalRamp": ["#121411", "#1a1c16", "#22241e", "#2c2e28", "#3a3c34", "#4a4c44", "#5a574c", "#8a8678"]
+      },
+      "bezel-hi": {
+        "role": "neutral",
+        "displayName": "Bezel Highlight",
+        "canonical": "#3a3c34",
+        "tonalRamp": ["#1a1c16", "#22241e", "#2c2e28", "#3a3c34", "#4a4c44", "#5a574c", "#8a8678", "#c9c4b4"]
+      },
+      "well": {
+        "role": "neutral",
+        "displayName": "Well",
+        "canonical": "#0c0d0b",
+        "tonalRamp": ["#070806", "#0a0b09", "#0c0d0b", "#10110e", "#151612", "#1a1c16", "#2c2e28", "#3f4238"]
+      },
+      "pit": {
+        "role": "neutral",
+        "displayName": "Pit",
+        "canonical": "#0a0b09",
+        "tonalRamp": ["#070806", "#0a0b09", "#0c0d0b", "#10110e", "#151612", "#1a1c16", "#2c2e28", "#3f4238"]
+      },
+      "plate-edge": {
+        "role": "neutral",
+        "displayName": "Plate Edge",
+        "canonical": "#1a1b16",
+        "tonalRamp": ["#0a0b09", "#121411", "#1a1b16", "#2a2c24", "#3f4238", "#4a4d42", "#5a574c", "#8a8678"]
+      },
+      "display": {
+        "role": "neutral",
+        "displayName": "Display Housing",
+        "canonical": "#151612",
+        "tonalRamp": ["#070806", "#0c0d0b", "#10110e", "#151612", "#1a1c16", "#2c2e28", "#3f4238", "#5a574c"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "#ece7d8",
+        "tonalRamp": ["#8a8678", "#a8a392", "#c9c4b4", "#d6d1c2", "#ece7d8", "#f3fff3", "#f7f4ea", "#fbf9f3"]
+      },
+      "legend": {
+        "role": "neutral",
+        "displayName": "Beige Legend",
+        "canonical": "#c9c4b4",
+        "tonalRamp": ["#5a574c", "#8a8678", "#a8a392", "#c9c4b4", "#d6d1c2", "#ece7d8", "#f3f0e6", "#fbf9f3"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Stone",
+        "canonical": "#8a8678",
+        "tonalRamp": ["#3f4238", "#5a574c", "#6e6b5e", "#8a8678", "#a8a392", "#c9c4b4", "#d6d1c2", "#ece7d8"]
+      },
+      "hair": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#3f4238",
+        "tonalRamp": ["#1a1b16", "#2a2c24", "#3f4238", "#4a4d42", "#5a574c", "#8a8678", "#a8a392", "#c9c4b4"]
+      },
+      "run": {
+        "role": "primary",
+        "displayName": "Run Green",
+        "canonical": "#2f7d32",
+        "tonalRamp": ["#143016", "#1e5a22", "#2f7d32", "#3d9a42", "#49a34c", "#6bb86e", "#9fd4a1", "#d4eed5"]
+      },
+      "run-hi": {
+        "role": "primary",
+        "displayName": "Run Lens",
+        "canonical": "#49a34c",
+        "tonalRamp": ["#143016", "#1e5a22", "#2f7d32", "#3d9a42", "#49a34c", "#6bb86e", "#9fd4a1", "#f3fff3"]
+      },
+      "run-mist": {
+        "role": "primary",
+        "displayName": "Run Mist",
+        "canonical": "#f3fff3",
+        "tonalRamp": ["#1e5a22", "#2f7d32", "#49a34c", "#6bb86e", "#9fd4a1", "#d4eed5", "#f3fff3", "#fbfffb"]
+      },
+      "estop": {
+        "role": "secondary",
+        "displayName": "E-Stop Red",
+        "canonical": "#b71c1c",
+        "tonalRamp": ["#4a0c0c", "#6e1010", "#7a1212", "#b71c1c", "#d32f2f", "#e57373", "#e8c4c2", "#fdeaea"]
+      },
+      "estop-hi": {
+        "role": "secondary",
+        "displayName": "Error Lens",
+        "canonical": "#d32f2f",
+        "tonalRamp": ["#4a0c0c", "#7a1212", "#b71c1c", "#d32f2f", "#e57373", "#ef9a9a", "#e8c4c2", "#fdeaea"]
+      },
+      "estop-legend": {
+        "role": "secondary",
+        "displayName": "E-Stop Legend",
+        "canonical": "#e8c4c2",
+        "tonalRamp": ["#7a1212", "#b71c1c", "#d32f2f", "#e57373", "#ef9a9a", "#e8c4c2", "#f5d9d7", "#fdeaea"]
+      },
+      "short": {
+        "role": "secondary",
+        "displayName": "Short / Loss",
+        "canonical": "#e57373",
+        "tonalRamp": ["#7a1212", "#b71c1c", "#d32f2f", "#e57373", "#ef9a9a", "#e8c4c2", "#f5d9d7", "#fdeaea"]
+      },
+      "caution": {
+        "role": "tertiary",
+        "displayName": "Caution Amber",
+        "canonical": "#d4a017",
+        "tonalRamp": ["#1a1408", "#8a6a10", "#9a6c0c", "#c48912", "#d4a017", "#e8b931", "#f0d078", "#f8eac0"]
+      },
+      "focus": {
+        "role": "tertiary",
+        "displayName": "Focus Amber",
+        "canonical": "#e8b931",
+        "tonalRamp": ["#1a1408", "#8a6a10", "#c48912", "#d4a017", "#e8b931", "#f0d078", "#f8eac0", "#fff8e1"]
+      },
+      "stop-face": {
+        "role": "tertiary",
+        "displayName": "Stop Face Ink",
+        "canonical": "#1a1408",
+        "tonalRamp": ["#1a1408", "#3a2a0c", "#8a6a10", "#9a6c0c", "#c48912", "#d4a017", "#e8b931", "#f0d078"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Lead process values: open P&L, open positions, max drawdown. Red Hat Mono, tabular, slightly tight."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Machine name on the fascia. Titillium, uppercase, tracked."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Well titles and display chrome. Muted uppercase plates."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Console default and empty-state copy (empty states 0.85rem, ≤42ch)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Readout tags, hardware keys, recipe tabs. Titillium 700 uppercase."
+      }
+    },
+    "shadows": [
+      {
+        "name": "proud-fascia",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 0 #0a0b09",
+        "purpose": "Command fascia thickness — panel sitting proud of the pit."
+      },
+      {
+        "name": "proud-dialog",
+        "value": "0 12px 0 #0a0b09",
+        "purpose": "Config and trade-detail sheets, same proud family as the fascia."
+      },
+      {
+        "name": "key-aux",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 0 #0d0e0b",
+        "purpose": "Auxiliary key travel thickness."
+      },
+      {
+        "name": "key-run",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 0 #143016",
+        "purpose": "RUN key thickness; pressed state inverts to an inner shade."
+      },
+      {
+        "name": "estop-head",
+        "value": "0 3px 0 #4a0c0c, inset 0 2px 0 rgba(255,255,255,0.25)",
+        "purpose": "Mushroom-head proud drop; collapses on press."
+      },
+      {
+        "name": "display-pit",
+        "value": "inset 0 0 0 1px #000, inset 0 12px 28px rgba(0,0,0,0.45)",
+        "purpose": "Recessed equity CRT inside the display bezel."
+      },
+      {
+        "name": "lamp-run",
+        "value": "0 0 10px rgba(73,163,76,0.55)",
+        "purpose": "Running lens bloom. Paused uses 8px amber; error uses 10px red."
+      }
+    ],
+    "motion": [
+      {
+        "name": "lamp-lens",
+        "value": "180ms ease-out",
+        "purpose": "Lamp lens background and bloom crossfade on machine state."
+      },
+      {
+        "name": "estop-head",
+        "value": "160ms ease-out",
+        "purpose": "Mushroom-head travel and drop collapse on press."
+      },
+      {
+        "name": "none-tabs",
+        "value": "none",
+        "purpose": "Recipe panels and the running status dot do not fade, pulse, or slide."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "deck",
+        "value": "960px",
+        "purpose": "Fascia stacks, readout column becomes 2-up, recipes go single column."
+      },
+      {
+        "name": "compact",
+        "value": "640px",
+        "purpose": "Tighter console padding; lead readout 1.35rem; RUN key flexes to fill."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Auxiliary Key",
+      "kind": "button",
+      "refersTo": "key-aux",
+      "description": "Stamped olive key for Voltar, Configurar, pager, and export.",
+      "html": "<button class=\"ds-key-aux\" type=\"button\">Voltar</button>",
+      "css": ".ds-key-aux { font-family: \"Titillium Web\", system-ui, sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; color: #c9c4b4; background: linear-gradient(180deg, #4a4c44 0%, #2e302a 100%); border: 1px solid #111; border-radius: 3px; padding: 0.55rem 0.85rem; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 0 #0d0e0b; } .ds-key-aux:hover { color: #ece7d8; } .ds-key-aux:active { transform: translateY(1px); box-shadow: inset 0 1px 2px #000; } .ds-key-aux:focus-visible { outline: 2px solid #e8b931; outline-offset: 2px; } .ds-key-aux:disabled { opacity: 0.45; cursor: not-allowed; }"
+    },
+    {
+      "name": "RUN Key",
+      "kind": "button",
+      "refersTo": "key-run",
+      "description": "Green hardware RUN; pressed or held becomes the amber STOP face.",
+      "html": "<button class=\"ds-key-run\" type=\"button\" aria-pressed=\"false\">Ligar Bot</button>",
+      "css": ".ds-key-run { font-family: \"Titillium Web\", system-ui, sans-serif; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; color: #f3fff3; background: linear-gradient(180deg, #3d9a42 0%, #2f7d32 55%, #1e5a22 100%); border: 1px solid #111; border-radius: 3px; min-width: 8.5rem; padding: 0.7rem 1rem; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 0 #143016; } .ds-key-run:hover { filter: brightness(1.06); } .ds-key-run:active, .ds-key-run[aria-pressed=\"true\"] { transform: translateY(2px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); background: linear-gradient(180deg, #c48912 0%, #9a6c0c 100%); color: #1a1408; filter: none; } .ds-key-run:focus-visible { outline: 2px solid #e8b931; outline-offset: 2px; }"
+    },
+    {
+      "name": "ESTOP Key",
+      "kind": "button",
+      "refersTo": "key-estop",
+      "description": "Dark key with a red mushroom head — kill, not a rectangular danger fill.",
+      "html": "<button class=\"ds-key-estop\" type=\"button\"><span class=\"ds-estop-head\" aria-hidden=\"true\"></span><span class=\"ds-estop-label\">Fechar Tudo</span></button>",
+      "css": ".ds-key-estop { font-family: \"Titillium Web\", system-ui, sans-serif; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; background: #1c1d18; border: 1px solid #3a201e; border-radius: 3px; padding: 0.35rem 0.55rem 0.45rem; min-width: 5.6rem; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); } .ds-estop-head { width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #e57373, #b71c1c 55%, #7a1212); border: 3px solid #6e1010; box-shadow: 0 3px 0 #4a0c0c, inset 0 2px 0 rgba(255,255,255,0.25); transition: transform 160ms ease-out, box-shadow 160ms ease-out; } .ds-estop-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #e8c4c2; } .ds-key-estop:hover .ds-estop-head { filter: brightness(1.08); } .ds-key-estop:active .ds-estop-head { transform: translateY(3px); box-shadow: 0 0 0 #4a0c0c, inset 0 4px 6px rgba(0,0,0,0.45); } .ds-key-estop:focus-visible { outline: 2px solid #e8b931; outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Lamp",
+      "kind": "custom",
+      "refersTo": "lamp",
+      "description": "42px housing, 22px lens. Offline stone, running green bloom, paused amber, error red.",
+      "html": "<div class=\"ds-lamp ds-lamp--running\" aria-hidden=\"true\"><span class=\"ds-lamp-lens\"></span></div>",
+      "css": ".ds-lamp { width: 42px; height: 42px; border-radius: 50%; background: #1a1c16; border: 3px solid #4a4d42; box-shadow: inset 0 2px 4px #000, 0 1px 0 rgba(255,255,255,0.12); display: grid; place-items: center; } .ds-lamp-lens { width: 22px; height: 22px; border-radius: 50%; background: #5c5f56; transition: background 180ms ease-out, box-shadow 180ms ease-out; } .ds-lamp--running .ds-lamp-lens { background: #49a34c; box-shadow: 0 0 10px rgba(73,163,76,0.55); } .ds-lamp--paused .ds-lamp-lens { background: #d4a017; box-shadow: 0 0 8px rgba(212,160,23,0.4); } .ds-lamp--error .ds-lamp-lens { background: #d32f2f; box-shadow: 0 0 10px rgba(211,47,47,0.5); }"
+    },
+    {
+      "name": "Lead Readout",
+      "kind": "custom",
+      "refersTo": "readout-lead",
+      "description": "Process instrument: muted tag, poster mono value, legend subline.",
+      "html": "<article class=\"ds-readout\"><span class=\"ds-readout-tag\">P&amp;L Aberto</span><div class=\"ds-readout-value\">$0.00</div><div class=\"ds-readout-sub\">0 posições ativas</div></article>",
+      "css": ".ds-readout { padding: 0.7rem 0.85rem; background: #10110e; border-bottom: 1px solid #3f4238; } .ds-readout-tag { display: block; font-family: \"Titillium Web\", system-ui, sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8a8678; margin-bottom: 0.1rem; } .ds-readout-value { font-family: \"Red Hat Mono\", ui-monospace, monospace; font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color: #ece7d8; font-variant-numeric: tabular-nums; } .ds-readout-sub { font-family: \"Red Hat Mono\", ui-monospace, monospace; font-size: 0.68rem; color: #c9c4b4; margin-top: 0.05rem; }"
+    },
+    {
+      "name": "Process Well",
+      "kind": "card",
+      "refersTo": "well",
+      "description": "Square inset cavity for recipe charts and tables.",
+      "html": "<div class=\"ds-well\"><h3 class=\"ds-well-title\">Drawdown</h3><p class=\"ds-well-empty\">Sem histórico suficiente para o mapa de calor.</p></div>",
+      "css": ".ds-well { background: #10110e; border: 1px solid #3f4238; border-radius: 0; padding: 0.75rem; color: #ece7d8; font-family: \"Titillium Web\", system-ui, sans-serif; } .ds-well-title { margin: 0 0 0.55rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8678; } .ds-well-empty { margin: 0; padding: 1.5rem 0.75rem; text-align: center; color: #c9c4b4; font-size: 0.85rem; max-width: 42ch; margin-inline: auto; }"
+    },
+    {
+      "name": "Recipe Tab",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Square bezel rail. Active tab cuts into the well with a 3px caution bar.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab\">Visão Geral</button><button class=\"ds-tab ds-tab-active\">Trades Abertos</button><button class=\"ds-tab\">Histórico</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 0; background: #2c2e28; border: 1px solid #1a1b16; } .ds-tab { flex: 1 1 auto; padding: 0.65rem 0.9rem; border: 0; border-right: 1px solid #1a1b16; border-radius: 0; background: transparent; color: #c9c4b4; font-family: \"Titillium Web\", system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; } .ds-tab:hover { background: #3a3c34; color: #ece7d8; } .ds-tab-active { background: #0c0d0b; color: #ece7d8; box-shadow: inset 0 3px 0 #d4a017; } .ds-tab:focus-visible { outline: 2px solid #e8b931; outline-offset: 2px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Pit field, hair border, 2px bite. Focus is amber border, no glow.",
+      "html": "<input class=\"ds-field\" type=\"search\" placeholder=\"Buscar ativo…\" />",
+      "css": ".ds-field { background: #0a0b09; color: #ece7d8; border: 1px solid #3f4238; border-radius: 2px; padding: 0.5rem 0.75rem; font-family: \"Titillium Web\", system-ui, sans-serif; font-size: 0.875rem; outline: none; } .ds-field::placeholder { color: #8a8678; } .ds-field:hover { border-color: #5a574c; } .ds-field:focus, .ds-field:focus-visible { border-color: #e8b931; box-shadow: none; outline: 2px solid #e8b931; outline-offset: 2px; }"
+    },
+    {
+      "name": "Command Fascia",
+      "kind": "custom",
+      "refersTo": "key-run",
+      "description": "Appliance lid: lamp, machine name, RUN, ESTOP — the first-glance hardware.",
+      "html": "<header class=\"ds-fascia\"><div class=\"ds-fascia-ident\"><div class=\"ds-lamp ds-lamp--running\" aria-hidden=\"true\"><span class=\"ds-lamp-lens\"></span></div><div><h2 class=\"ds-fascia-name\">Trade Bot</h2><p class=\"ds-fascia-via\">IA Multi-Indicadores · Moderado</p></div></div><button class=\"ds-key-run\" type=\"button\">Ligar Bot</button></header>",
+      "css": ".ds-fascia { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; padding: 0.85rem 1rem; background: linear-gradient(180deg, #3a3c34 0%, #2c2e28 38%, #22241e 100%); border: 1px solid #1a1b16; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 0 #0a0b09; font-family: \"Titillium Web\", system-ui, sans-serif; } .ds-fascia-ident { display: flex; align-items: center; gap: 0.85rem; } .ds-fascia-name { margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #ece7d8; } .ds-fascia-via { margin: 0.15rem 0 0; font-size: 0.78rem; color: #c9c4b4; } .ds-lamp { width: 42px; height: 42px; border-radius: 50%; background: #1a1c16; border: 3px solid #4a4d42; box-shadow: inset 0 2px 4px #000, 0 1px 0 rgba(255,255,255,0.12); display: grid; place-items: center; flex-shrink: 0; } .ds-lamp-lens { width: 22px; height: 22px; border-radius: 50%; } .ds-lamp--running .ds-lamp-lens { background: #49a34c; box-shadow: 0 0 10px rgba(73,163,76,0.55); } .ds-key-run { font-family: \"Titillium Web\", system-ui, sans-serif; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase; color: #f3fff3; background: linear-gradient(180deg, #3d9a42 0%, #2f7d32 55%, #1e5a22 100%); border: 1px solid #111; border-radius: 3px; min-width: 8.5rem; padding: 0.7rem 1rem; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 0 #143016; } .ds-key-run:hover { filter: brightness(1.06); } .ds-key-run:focus-visible { outline: 2px solid #e8b931; outline-offset: 2px; }"
+    },
+    {
+      "name": "Side Stamp",
+      "kind": "chip",
+      "refersTo": "tab",
+      "description": "LONG/SHORT 2px stamps. Signal color only — not a chip family to grow.",
+      "html": "<span class=\"ds-side ds-side-long\">LONG</span> <span class=\"ds-side ds-side-short\">SHORT</span>",
+      "css": ".ds-side { display: inline-block; font-family: \"Titillium Web\", system-ui, sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 2px; padding: 0.1rem 0.45rem; border: 1px solid; } .ds-side-long { color: #49a34c; background: rgba(47,125,50,0.15); border-color: #2f7d32; } .ds-side-short { color: #e57373; background: rgba(183,28,28,0.15); border-color: #b71c1c; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Machine Fascia",
+    "overview": "This system is the visual language of CryptoDash Pro's private Trade Bot console (`#trade-bot-page` only). The rest of the dashboard keeps its own chrome. The console is a night-charcoal operator panel: a bevelled command fascia, a column of process readouts, a recessed equity display, and recipe tabs under the bezel. RUN, STOP, and ESTOP are hardware keys. Numbers are instruments, not marketing tiles.\n\nThe material is painted steel and inset wells, not glass. Surfaces are olive-black plates with a hairline groove and a proud drop that reads as panel thickness. Color is a lamp, not a theme: green means live, amber means caution or held, red is the mushroom head and a losing sign. Everything else is beige legend on charcoal. Copy on this surface is Portuguese (pt-BR), set as stamped uppercase plates.\n\nIt refuses equal KPI cards, an icon-chip hero, nested rounded crypto-cards, and dashboard blue. Those belong to other pages.",
+    "keyCharacteristics": [
+      "Night charcoal ground, olive bezel, deeper wells; beige legend and warm ink — not cool gray-on-blue.",
+      "Titillium Web for plates and keys; Red Hat Mono for values, stamps, and clocks.",
+      "Square plates (0 radius) with 2–3px only on keys and fields; circles only for the status lamp and the ESTOP mushroom.",
+      "Color reserved for lamp, P&L sign, side (LONG/SHORT), and the e-stop head.",
+      "Depth from inset wells and stacked bezel drops, never blur or floating cards."
+    ],
+    "rules": [
+      {
+        "name": "The Signal-Only Color Rule",
+        "body": "Color is a lamp. If it is not the status lens, the RUN/STOP/ESTOP hardware, a P&L sign, or a LONG/SHORT side, it is charcoal, beige, or ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Voice Rule",
+        "body": "Titillium stamps the plate (name, tags, keys, tabs, titles). Red Hat Mono reports the process (values, sublines, uptime, pager, config numerics). Do not set a KPI in Titillium or a key caption in Mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fascia-First Rule",
+        "body": "Status and kill live on the fascia. Tabs are recipe pages under the appliance, never a second hero and never a row of equal KPI cards above the fold.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No-Glass Rule",
+        "body": "No blur, no floating soft shadow, no translucent frost. Depth is a pit or a proud bezel.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Panel Rule",
+        "body": "If it is a plate, it is square. If it is a lamp or a mushroom, it is a circle. Nothing else is a pill.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do put live/dead and open risk in the first glance: lamp + lead P&L/positions/drawdown, then RUN / STOP / ESTOP on the fascia.",
+      "Do keep color on lamps, signed numbers, side stamps, and the mushroom — Signal-Only Color Rule.",
+      "Do set values in Red Hat Mono tabular-nums and plates in uppercase Titillium — Two-Voice Rule.",
+      "Do bevel keys and let them travel on press; let the RUN key become the amber STOP face when held.",
+      "Do use square wells and a recessed display for recipe content under the fascia."
+    ],
+    "donts": [
+      "Don't lay out equal KPI cards, an icon-chip hero, or nested rounded crypto-cards on this console.",
+      "Don't use dashboard blue, glass blur, pill radii, or soft floating shadows here.",
+      "Don't turn ESTOP into a red rectangular button or RUN into a text link.",
+      "Don't apply this HMI to the rest of CryptoDash Pro unless that surface is explicitly brought onto the panel.",
+      "Don't pulse, bounce, or fade recipe pages; the HMI kills those motions (`animation: none` on tabs and the running status dot)."
+    ]
+  }
+}

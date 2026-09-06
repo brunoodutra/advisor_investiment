@@ -2,7 +2,7 @@ import { CONFIG } from './config.js?v=20260828a';
 import { state } from './state.js?v=20260828a';
 import { normalizeUpdateIntervalMs } from './utils.js?v=20260828a';
 import { fetchCryptoData, fetchFearGreedIndex, fetchGlobalData, fetchMarketExitData } from './api.js?v=20260828a';
-import { renderCryptoCards, showPage, toggleTheme, toggleViewMode, preloadRecommendations, showCryptoDetail, showNotification } from './ui.js?v=20260828a';
+import { renderCryptoCards, showPage, toggleTheme, toggleViewMode, preloadRecommendations, showCryptoDetail, showNotification } from './ui.js?v=20260905hard';
 import { changeCrypto, changeTimeframe, home_dashboard, loadLightweightChart, openSettings, resetSettings, saveSettings, toggleRuler, showRulerInfo, clearRuler } from './chart.js?v=20260828a';
 import { renderMarketExitCard, showMarketExitPage } from './marketExit.js?v=20260828a';
 import { toggleMAPanel, applyMASettings, clearAllMA, handlePeriodCheckboxChange, updateMAToggleButtonState, toggleMovingAverages, toggleFibonacci, toggleRSI, toggleMACD } from './indicatorControls.js?v=20260828a';
@@ -10,7 +10,7 @@ import { initAuth, wireAuthUI, requireAuthThenNavigate } from './auth.js?v=20260
 import { loadUserSettings } from './userSettings.js?v=20260828a';
 import { refreshAlerts, wireAlertsUI } from './alerts.js?v=20260828a';
 import { initAIChat } from './chat.js?v=20260828a';
-import { renderTradeBotCard, showTradeBotPage, loadTradeBotDashboardPage } from './tradeBotDashboard.js?v=20260828a';
+import { renderTradeBotCard, showTradeBotPage, loadTradeBotDashboardPage } from './tradeBotDashboard.js?v=20260905polish';
 
 let userSettingsSchemaNotified = false;
 

@@ -2,7 +2,7 @@ import { CONFIG } from './config.js?v=20260828a';
 import { state } from './state.js?v=20260828a';
 import { calculateMarketExitScore } from './marketExit.js?v=20260828a';
 import { formatLargeNumber, formatCurrency } from './utils.js?v=20260828a';
-import { updateGauge, updateMarketExitCard, renderCryptoCards } from './ui.js?v=20260828a';
+import { updateGauge, updateMarketExitCard, renderCryptoCards } from './ui.js?v=20260905hard';
 
 export function tradeBotAuthHeaders(extra = {}) {
     const headers = { Accept: 'application/json', ...extra };

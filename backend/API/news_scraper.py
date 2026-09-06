@@ -9,6 +9,7 @@ from urllib.parse import quote
 from xml.etree import ElementTree as ET
 
 import requests
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     from LLM_chat.llm_conversation import LLM_news_sentiment_response
@@ -17,6 +18,7 @@ except Exception:
 
 _REQUEST_TIMEOUT_SECONDS = 8
 _CACHE_TTL_SECONDS = 600
+_CACHE_TTL_SECONDS_EMPTY = 120  # resultado vazio (ex.: ADA sem manchetes) re-tenta mais cedo
 
 _NEWS_CACHE: Dict[str, Dict] = {}
 _API_DIR = Path(__file__).resolve().parent
@@ -575,8 +577,13 @@ def _get_cached_sentiment_payload(cache_key: str) -> Optional[Dict]:
     if not cached:
         return None
 
+    payload = cached.get("payload")
+    ttl = _CACHE_TTL_SECONDS
+    if not isinstance(payload, dict) or not payload.get("news_count"):
+        ttl = _CACHE_TTL_SECONDS_EMPTY
+
     age_seconds = _cache_age_seconds(cached.get("created_at"))
-    if age_seconds is None or age_seconds > _CACHE_TTL_SECONDS:
+    if age_seconds is None or age_seconds > ttl:
         try:
             _sentiment_cache_path(cache_key).unlink(missing_ok=True)
         except Exception:
@@ -615,8 +622,13 @@ def get_crypto_news(crypto: str, limit: int = 10, lang: str = "mixed") -> Dict:
     collected_items: List[Dict] = []
     sources_used = []
 
-    for feed in feeds:
-        items = _fetch_feed_items(feed, coin_info["keywords"][0])
+    # Feeds são independentes: busca em paralelo e o tempo total vira o do
+    # feed mais lento (<= timeout), em vez da soma sequencial de todos.
+    max_workers = min(8, max(1, len(feeds)))
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        feed_results = list(pool.map(lambda f: _fetch_feed_items(f, coin_info["keywords"][0]), feeds))
+
+    for feed, items in zip(feeds, feed_results):
         if not items:
             continue
 
@@ -707,7 +719,8 @@ def get_sentiment_analysis_payload(crypto: str, limit: int = 10, lang: str = "mi
         "sentiment_method": sentiment_method,
     }
 
-    if news_items:
-        _set_cached_sentiment_payload(cache_key, payload, news_payload)
+    # Cacheia inclusive resultado vazio (TTL menor via _CACHE_TTL_SECONDS_EMPTY),
+    # senão criptos sem manchetes (ex.: ADA) refazem fetch + LLM a cada request.
+    _set_cached_sentiment_payload(cache_key, payload, news_payload)
 
     return payload
