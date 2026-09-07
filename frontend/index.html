@@ -4,344 +4,665 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoDash Pro | Sinais de compra e venda com IA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="description" content="Advisor de cripto com sinais de deep learning, sentimento e chat. Cadastre-se para liberar mais ativos, alvo e stop por perfil.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        .hero-gradient {
-            background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);
+        :root {
+            --ground: #07111f;
+            --panel: #0c1a2e;
+            --panel-2: #12233b;
+            --hair: #1e3a5f;
+            --ink: #e8eef8;
+            --muted: #8ba3c4;
+            --accent: #3b82f6;
+            --accent-hi: #60a5fa;
+            --focus: #60a5fa;
+            --up: #3fb950;
+            --down: #f85149;
+            --hold: #d29922;
+            --sans: "Sora", system-ui, sans-serif;
+            --mono: "IBM Plex Mono", ui-monospace, monospace;
         }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        *, *::before, *::after { box-sizing: border-box; }
+        html { color-scheme: dark; scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            background: var(--ground);
+            color: var(--ink);
+            font-family: var(--sans);
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.55;
+            overflow-x: hidden;
         }
-        .testimonial-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        ::selection { background: rgba(96, 165, 250, 0.35); color: var(--ink); }
+        :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+        a { color: inherit; }
+
+        .skip {
+            position: absolute;
+            inset-inline-start: 0.75rem;
+            top: 0.75rem;
+            z-index: 40;
+            padding: 0.5rem 0.85rem;
+            background: var(--ink);
+            color: var(--ground);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transform: translateY(-200%);
         }
-        .pricing-card:hover {
-            transform: scale(1.03);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        .skip:focus { transform: none; }
+
+        .wrap {
+            max-width: 68rem;
+            margin: 0 auto;
+            padding-inline: 1.5rem;
         }
-        .blink {
-            animation: blink-animation 1.5s infinite;
+        .measure { max-width: 40rem; }
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(7, 17, 31, 0.92);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--hair);
         }
-        @keyframes blink-animation {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        nav .wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem 1rem;
+            min-height: 3.5rem;
+            flex-wrap: wrap;
         }
-        .demo-container {
-            border: 1px solid #334155;
-            border-radius: 0.75rem;
-            background-color: #0f172a;
+        .brand {
+            text-decoration: none;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            min-width: 0;
+        }
+        .brand span { color: var(--accent-hi); font-weight: 500; }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem 1.25rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            min-width: 0;
+        }
+        .nav-links a:not(.btn) {
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding-block: 0.4rem;
+        }
+        .nav-links a:not(.btn):hover { color: var(--ink); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border: 1px solid var(--hair);
+            background: var(--panel);
+            color: var(--ink);
+            padding: 0.7rem 1.1rem;
+            min-height: 2.75rem;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: background 120ms ease-out, border-color 120ms ease-out, filter 120ms ease-out;
+            white-space: nowrap;
+        }
+        .btn:hover { border-color: var(--muted); background: var(--panel-2); }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .btn--primary {
+            background: var(--accent);
+            color: #f8fbff;
+            border-color: rgba(232, 238, 248, 0.12);
+        }
+        .btn--primary:hover:not(:disabled) {
+            filter: brightness(1.08);
+            background: var(--accent);
+            border-color: rgba(232, 238, 248, 0.12);
+        }
+        .btn--ghost {
+            background: transparent;
+            border-color: rgba(232, 238, 248, 0.28);
+            color: var(--ink);
+        }
+        .btn--ghost:hover { background: rgba(232, 238, 248, 0.06); border-color: var(--muted); }
+        .btn--quiet {
+            min-height: 2.5rem;
+            font-size: 0.875rem;
+            margin-top: 0.65rem;
+        }
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .hero-shell {
+            background:
+                radial-gradient(ellipse 80% 60% at 15% 0%, rgba(30, 58, 138, 0.45), transparent 55%),
+                radial-gradient(ellipse 50% 40% at 90% 20%, rgba(59, 130, 246, 0.12), transparent 50%),
+                var(--ground);
+            border-bottom: 1px solid var(--hair);
+        }
+        .hero {
+            padding: 4.5rem 0 5rem;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 3.5rem;
+            align-items: start;
+        }
+        .hero > * { min-width: 0; }
+        h1 {
+            margin: 0 0 1.25rem;
+            font-size: clamp(1.75rem, 3.2vw, 2.45rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
+        .lede {
+            margin: 0 0 1.75rem;
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 38rem;
+        }
+
+        .signal {
+            background: var(--panel);
+            border: 1px solid var(--hair);
+            padding: 1.25rem 1.35rem 1.15rem;
+            min-width: 0;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+        }
+        .signal[aria-busy="true"] { opacity: 0.85; }
+        .signal.is-error { border-color: rgba(248, 81, 73, 0.45); }
+        .signal__meta {
+            margin: 0 0 1rem;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+        .signal__head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .signal h2 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        .signal__px {
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            text-align: end;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+        .signal dl {
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem 1.25rem;
+        }
+        .signal dl > div { min-width: 0; }
+        .signal dt {
+            font-size: 0.8125rem;
+            color: var(--muted);
+            margin-bottom: 0.2rem;
+        }
+        .signal dd {
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 0.95rem;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            overflow-wrap: anywhere;
+        }
+        .signal__reco { font-size: 1.35rem; font-weight: 600; }
+        .num-up { color: var(--up); }
+        .num-down { color: var(--down); }
+        .num-hold { color: var(--hold); }
+        .signal__note {
+            margin: 1.15rem 0 0;
+            padding-top: 1rem;
+            border-top: 1px solid var(--hair);
+            font-size: 0.875rem;
+            color: var(--muted);
+        }
+        .signal__note a { color: var(--accent-hi); }
+
+        .band { padding: 4rem 0 4.5rem; }
+        .band + .band { border-top: 1px solid var(--hair); }
+        h2.sec {
+            margin: 0 0 0.75rem;
+            font-size: 1.45rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        .sec-lede {
+            margin: 0 0 2.25rem;
+            color: var(--muted);
+            max-width: 40rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        .feature {
+            background: var(--panel);
+            border: 1px solid var(--hair);
+            padding: 1.25rem 1.3rem;
+            min-width: 0;
+        }
+        .feature h3 {
+            margin: 0 0 0.45rem;
+            font-size: 1.02rem;
+            font-weight: 600;
+        }
+        .feature p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+        .feature__mark {
+            display: block;
+            width: 1.5rem;
+            height: 2px;
+            background: var(--accent);
+            margin-bottom: 0.85rem;
+        }
+
+        .perks {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0;
+            border: 1px solid var(--hair);
+            background: var(--panel);
+        }
+        .perks li {
+            display: grid;
+            grid-template-columns: 7.5rem 1fr;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--hair);
+            min-width: 0;
+        }
+        .perks li:first-child { border-top: 0; }
+        .perks strong {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent-hi);
+        }
+        .perks span { color: var(--muted); font-size: 0.95rem; }
+
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            align-items: stretch;
+        }
+        .plan {
+            background: var(--panel);
+            border: 1px solid var(--hair);
+            padding: 1.35rem 1.3rem 1.4rem;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .plan--featured {
+            background: linear-gradient(180deg, #12284a 0%, var(--panel) 55%);
+            border-color: rgba(59, 130, 246, 0.55);
+        }
+        .plan__badge {
+            display: inline-block;
+            margin-bottom: 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--accent-hi);
+        }
+        .plan h3 {
+            margin: 0 0 0.35rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+        .plan__price {
+            margin: 0 0 0.85rem;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+        .plan__blurb {
+            margin: 0 0 1rem;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+        .plan ul {
+            margin: 0 0 1.35rem;
+            padding: 0;
+            list-style: none;
+            flex: 1;
+        }
+        .plan li {
+            position: relative;
+            padding: 0.35rem 0 0.35rem 1.1rem;
+            color: var(--ink);
+            font-size: 0.92rem;
+        }
+        .plan li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.75rem;
+            width: 0.45rem;
+            height: 0.45rem;
+            background: var(--accent);
+        }
+        .plan .btn { width: 100%; }
+        .plan-note {
+            margin: 1.25rem 0 0;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .cta-band {
+            background: linear-gradient(135deg, #0f2748 0%, #0c1a2e 55%, #07111f 100%);
+            border-top: 1px solid var(--hair);
+            border-bottom: 1px solid var(--hair);
+        }
+        .cta-band .sec-lede { margin-bottom: 1.5rem; }
+
+        .src {
+            margin: 2rem 0 0;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+
+        footer {
+            padding: 1.5rem 0 2rem;
+        }
+        footer .wrap {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        footer p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.8125rem;
+            max-width: 42rem;
+        }
+        footer a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        footer a:hover { color: var(--ink); }
+
+        @media (max-width: 960px) {
+            .features, .plans { grid-template-columns: 1fr; }
+            .plan--featured { order: -1; }
+        }
+        @media (max-width: 800px) {
+            .hero { grid-template-columns: 1fr; gap: 2.25rem; padding: 2.5rem 0 3rem; }
+            .perks li { grid-template-columns: 1fr; gap: 0.25rem; }
+        }
+        @media (max-width: 420px) {
+            .signal dl { grid-template-columns: 1fr; }
+            .btn { white-space: normal; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .btn { transition: none; }
+            .signal[aria-busy="true"] { opacity: 1; }
+            nav { backdrop-filter: none; }
+        }
+        @media (prefers-contrast: more) {
+            :root { --hair: #8ba3c4; --muted: #c9d7ea; }
+            .num-up, .num-down, .num-hold { text-decoration: underline; text-underline-offset: 0.15em; }
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
-    <nav class="bg-gray-800 py-4 px-6 shadow-lg sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <i class="fas fa-brain text-white" aria-hidden="true"></i>
-                </div>
-                <p class="text-xl font-bold">CryptoDash<span class="text-blue-300">Pro</span></p>
+<body>
+    <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+    <nav aria-label="Principal">
+        <div class="wrap">
+            <a href="/" class="brand">CryptoDash<span>Pro</span></a>
+            <div class="nav-links">
+                <a href="#recursos">Recursos</a>
+                <a href="#vantagens">Cadastro</a>
+                <a href="#planos">Planos</a>
+                <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
             </div>
-            <div class="hidden md:flex space-x-8 items-center">
-                <a href="#features" class="hover:text-blue-300 transition">O que entra</a>
-                <a href="#cases" class="hover:text-blue-300 transition">Como decide</a>
-                <a href="#pricing" class="hover:text-blue-300 transition">Planos</a>
-                <a href="#demo" class="hover:text-blue-300 transition">Como é o painel</a>
-                <a href="/dashboard/" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition">
-                    <i class="fas fa-chart-line mr-2" aria-hidden="true"></i>Abrir Dashboard
-                </a>
-            </div>
-            <button class="md:hidden text-xl" type="button" aria-label="Abrir Dashboard">
-                <i class="fas fa-bars" aria-hidden="true"></i>
-            </button>
         </div>
     </nav>
 
-    <section class="hero-gradient py-20 px-6">
-        <div class="container mx-auto flex flex-col md:flex-row items-center">
-            <div class="md:w-1/2 mb-10 md:mb-0">
-                <h1 class="text-4xl md:text-5xl font-bold mb-6">Sinais de compra e venda de uma IA treinada no mercado</h1>
-                <p class="text-xl text-blue-100 mb-8">O modelo lê diversos indicadores e classifica cada ativo em compra, venda ou manter — com alvo e stop no seu perfil. No painel, pergunte à IA sobre o mesmo sinal. A decisão continua sua.</p>
-                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                    <a href="/dashboard/" class="bg-white text-blue-800 hover:bg-blue-100 px-8 py-3 rounded-lg font-bold text-center transition">Abrir Dashboard</a>
-                    <a href="#demo" class="border-2 border-white text-white hover:bg-white hover:text-blue-800 px-8 py-3 rounded-lg font-bold text-center transition">Ver o que tem no painel</a>
-                </div>
-                <div class="mt-8 flex items-center space-x-4">
-                    <div class="flex -space-x-2">
-                        <img src="https://randomuser.me/api/portraits/women/12.jpg" class="w-10 h-10 rounded-full border-2 border-white" alt="">
-                        <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full border-2 border-white" alt="">
-                        <img src="https://randomuser.me/api/portraits/women/44.jpg" class="w-10 h-10 rounded-full border-2 border-white" alt="">
-                    </div>
-                    <div>
-                        <p class="text-sm text-blue-100">Junte-se a <span class="font-bold">+5.000</span> investidores</p>
-                        <div class="flex items-center">
-                            <i class="fas fa-star text-yellow-400 mr-1" aria-hidden="true"></i>
-                            <i class="fas fa-star text-yellow-400 mr-1" aria-hidden="true"></i>
-                            <i class="fas fa-star text-yellow-400 mr-1" aria-hidden="true"></i>
-                            <i class="fas fa-star text-yellow-400 mr-1" aria-hidden="true"></i>
-                            <i class="fas fa-star text-yellow-400 mr-1" aria-hidden="true"></i>
-                            <span class="text-sm ml-1">4.9/5</span>
-                        </div>
+    <header class="hero-shell">
+        <div class="wrap">
+            <section class="hero">
+                <div>
+                    <h1>Sinais de compra e venda de uma IA treinada no mercado</h1>
+                    <p class="lede">Deep learning sobre indicadores, sentimento e chat no mesmo painel — com alvo e stop no seu perfil. Cadastre-se para liberar mais ativos e o advisor completo. A decisão continua sua.</p>
+                    <div class="btn-row">
+                        <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
+                        <a class="btn btn--ghost" href="#recursos">Ver recursos</a>
                     </div>
                 </div>
-            </div>
-            <div class="md:w-1/2">
-                <div class="demo-container p-1">
-                    <div class="bg-gray-800 rounded-lg overflow-hidden">
-                        <div class="bg-gray-700 p-3 flex items-center">
-                            <div class="flex space-x-2 mr-4">
-                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                            </div>
-                            <div class="bg-gray-600 text-xs px-2 py-1 rounded flex-1 text-center">Último sinal · Bitcoin</div>
-                        </div>
-                        <div class="p-4">
-                            <div class="flex items-center mb-4">
-                                <img src="https://cryptologos.cc/logos/bitcoin-btc-logo.png" alt="" class="w-8 h-8 mr-3">
-                                <div>
-                                    <h2 class="font-bold">Bitcoin (BTC)</h2>
-                                    <div class="flex items-center text-sm">
-                                        <span class="text-gray-300 mr-2" id="hero-btc-price">—</span>
-                                        <span class="text-gray-300" id="hero-btc-change">—</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-gray-700 rounded-lg h-48 mb-4 flex items-center justify-center">
-                                <div class="text-center">
-                                    <i class="fas fa-chart-line text-4xl text-blue-500 mb-2" aria-hidden="true"></i>
-                                    <p>Gráfico com o sinal marcado</p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 mb-4">
-                                <div class="bg-blue-900 bg-opacity-50 p-2 rounded-lg">
-                                    <p class="text-xs text-blue-300">Sinal da IA</p>
-                                    <p class="font-bold" id="hero-recommendation">—</p>
-                                </div>
-                                <div class="bg-gray-700 p-2 rounded-lg">
-                                    <p class="text-xs text-gray-400">Gráfico de</p>
-                                    <p class="font-bold">4 horas</p>
-                                </div>
-                            </div>
-                            <div class="bg-gray-700 rounded-lg p-3">
-                                <p class="text-sm" id="hero-recommendation-details"><span class="text-blue-400 font-bold">IA:</span> Buscando o último sinal…</p>
-                            </div>
-                        </div>
+                <article class="signal" id="signal-card" aria-labelledby="signal-heading" aria-busy="true">
+                    <p class="signal__meta">Último sinal · Bitcoin · perfil moderado</p>
+                    <div class="signal__head">
+                        <h2 id="signal-heading">Bitcoin</h2>
+                        <p class="signal__px">
+                            <span id="hero-btc-price">—</span>
+                            <span id="hero-btc-change">—</span>
+                        </p>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="bg-gray-800 py-8">
-        <div class="container mx-auto px-6">
-            <p class="text-center text-gray-400 mb-6">Preços e mercado vêm da Binance e da CoinGecko.</p>
-            <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-                <img src="https://logo.clearbit.com/binance.com" class="h-8 opacity-70 hover:opacity-100 transition" alt="Binance">
-                <img src="https://logo.clearbit.com/coingecko.com" class="h-8 opacity-70 hover:opacity-100 transition" alt="CoinGecko">
-            </div>
-        </div>
-    </div>
-
-    <section id="features" class="py-20 px-6 bg-gray-900">
-        <div class="container mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">O sinal treinado é a entrega. O resto apoia.</h2>
-                <p class="text-xl text-gray-400 max-w-3xl mx-auto">Compra, venda ou manter a partir de indicadores do mercado — sentimento e chat entram para você entender o sinal, não para substituí-lo. Nenhuma ordem sai daqui.</p>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="feature-card bg-gray-800 rounded-xl p-8 transition">
-                    <div class="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center mb-6">
-                        <i class="fas fa-brain text-2xl" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Sinal de compra e venda</h3>
-                    <p class="text-gray-400">IA de deep learning treinada em diversos indicadores do mercado. Classifica cada ativo em compra, venda ou manter, com alvo e stop no perfil conservador, moderado ou agressivo.</p>
-                </div>
-
-                <div class="feature-card bg-gray-800 rounded-xl p-8 transition">
-                    <div class="w-14 h-14 bg-green-600 rounded-lg flex items-center justify-center mb-6">
-                        <i class="fas fa-gauge-high text-2xl" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Sentimento de mercado</h3>
-                    <p class="text-gray-400">Fear &amp; Greed e o clima das notícias ao lado do gráfico — contexto para o sinal de compra e venda, não um substituto.</p>
-                </div>
-
-                <div class="feature-card bg-gray-800 rounded-xl p-8 transition">
-                    <div class="w-14 h-14 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
-                        <i class="fas fa-comments text-2xl" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Pergunte à IA</h3>
-                    <p class="text-gray-400">Tire dúvida em português sobre o sinal que já está no gráfico — o mesmo modelo, o mesmo sentimento, o mesmo ativo. Não é um chatbot solto.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="cases" class="py-20 px-6 bg-gray-900">
-        <div class="container mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">Do indicador ao sinal — sem pressa</h2>
-                <p class="text-xl text-gray-400 max-w-3xl mx-auto">A IA lê os indicadores; o painel mostra compra, venda ou manter, com alvo e stop. Quem decide é você.</p>
-            </div>
-
-            <div class="grid lg:grid-cols-2 gap-8">
-                <div class="testimonial-card rounded-xl p-8">
-                    <div class="flex items-center mb-6">
-                        <img src="https://randomuser.me/api/portraits/women/43.jpg" class="w-16 h-16 rounded-full mr-4 border-2 border-blue-500" alt="">
+                    <dl>
                         <div>
-                            <h3 class="font-bold text-lg">Mariana R.</h3>
-                            <p class="text-blue-400">Trader</p>
+                            <dt>Sinal da IA</dt>
+                            <dd class="signal__reco" id="hero-recommendation">—</dd>
                         </div>
-                    </div>
-                    <p class="text-gray-300 mb-6 italic">"Gráfico, sinal de IA e o histórico no mesmo lugar. Ficou mais fácil seguir o plano — e não o impulso."</p>
-                </div>
-
-                <div class="testimonial-card rounded-xl p-8">
-                    <div class="flex items-center mb-6">
-                        <img src="https://randomuser.me/api/portraits/men/65.jpg" class="w-16 h-16 rounded-full mr-4 border-2 border-blue-500" alt="">
                         <div>
-                            <h3 class="font-bold text-lg">Ricardo T.</h3>
-                            <p class="text-blue-400">Investidor</p>
+                            <dt>Quando</dt>
+                            <dd id="hero-when">—</dd>
                         </div>
+                        <div>
+                            <dt>Alvo</dt>
+                            <dd id="hero-target">—</dd>
+                        </div>
+                        <div>
+                            <dt>Stop</dt>
+                            <dd id="hero-stop">—</dd>
+                        </div>
+                    </dl>
+                    <div class="signal__note" id="hero-recommendation-details" role="status" aria-live="polite">
+                        Buscando o último sinal…
+                        <noscript>O sinal ao vivo precisa de JavaScript. <a href="/dashboard/">Abra o dashboard</a> — o mercado continua visível lá.</noscript>
                     </div>
-                    <p class="text-gray-300 mb-6 italic">"O fluxo ficou objetivo: ver o sinal, ver o risco no stop, e só então decidir."</p>
+                </article>
+            </section>
+        </div>
+    </header>
+
+    <main id="conteudo">
+        <section class="band" id="recursos">
+            <div class="wrap">
+                <h2 class="sec">O que o produto entrega</h2>
+                <p class="sec-lede">O sinal treinado é o centro. Sentimento e chat existem para você entendê-lo — não para substituí-lo. Nenhuma ordem sai daqui.</p>
+                <div class="features">
+                    <article class="feature">
+                        <span class="feature__mark" aria-hidden="true"></span>
+                        <h3>Sinal de compra e venda</h3>
+                        <p>IA de deep learning treinada em diversos indicadores. Classifica cada ativo em compra, venda ou manter, com alvo e stop no perfil conservador, moderado ou agressivo.</p>
+                    </article>
+                    <article class="feature">
+                        <span class="feature__mark" aria-hidden="true"></span>
+                        <h3>Sentimento de mercado</h3>
+                        <p>Fear &amp; Greed e o clima das notícias ao lado do gráfico — contexto para o sinal, não um substituto.</p>
+                    </article>
+                    <article class="feature">
+                        <span class="feature__mark" aria-hidden="true"></span>
+                        <h3>Pergunte à IA</h3>
+                        <p>Tire dúvida em português sobre o sinal que já está no gráfico. Não é um chatbot solto.</p>
+                    </article>
+                </div>
+                <p class="src">Preços e velas vêm da Binance; visão global, da CoinGecko.</p>
+            </div>
+        </section>
+
+        <section class="band" id="vantagens">
+            <div class="wrap">
+                <h2 class="sec">Por que criar conta</h2>
+                <p class="sec-lede">Sem cadastro você vê só o Bitcoin. Com conta, o advisor abre o restante do mercado e salva o seu perfil.</p>
+                <ul class="perks">
+                    <li>
+                        <strong>Mais ativos</strong>
+                        <span>Libere criptos além do BTC no dashboard — cada uma com o mesmo fluxo de sinal.</span>
+                    </li>
+                    <li>
+                        <strong>Alvo e stop</strong>
+                        <span>Veja proteção e objetivo por perfil de risco, junto da recomendação.</span>
+                    </li>
+                    <li>
+                        <strong>Perfil salvo</strong>
+                        <span>Conservador, moderado ou agressivo acompanha você nas próximas visitas.</span>
+                    </li>
+                    <li>
+                        <strong>Chat no contexto</strong>
+                        <span>Pergunte à IA sobre o ativo e o sinal que está na tela — não um bot genérico.</span>
+                    </li>
+                </ul>
+                <div class="btn-row" style="margin-top: 1.5rem;">
+                    <a class="btn btn--primary" href="/dashboard/">Criar conta no dashboard</a>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="demo" class="py-20 px-6 bg-gray-800">
-        <div class="container mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">O painel, com o sinal ao vivo</h2>
-                <p class="text-xl text-gray-400 max-w-3xl mx-auto">Abra o dashboard para ver o sinal de compra e venda no gráfico — e, se quiser, pergunte à IA.</p>
-            </div>
-
-            <div class="bg-gray-900 rounded-xl overflow-hidden">
-                <div class="grid lg:grid-cols-2">
-                    <div class="p-8 lg:p-12">
-                        <h3 class="text-2xl font-bold mb-4">O que você encontra lá</h3>
-                        <p class="text-gray-400 mb-6">Não é uma prévia estática: é o próprio dashboard.</p>
-
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-start"><i class="fas fa-check-circle text-green-400 mt-1 mr-3" aria-hidden="true"></i><span>Sinal de compra, venda ou manter — IA treinada em indicadores do mercado</span></li>
-                            <li class="flex items-start"><i class="fas fa-check-circle text-green-400 mt-1 mr-3" aria-hidden="true"></i><span>Histórico do sinal marcado no gráfico, com alvo e stop por perfil</span></li>
-                            <li class="flex items-start"><i class="fas fa-check-circle text-green-400 mt-1 mr-3" aria-hidden="true"></i><span>Preço e velas da Binance; sentimento e visão global da CoinGecko</span></li>
-                            <li class="flex items-start"><i class="fas fa-check-circle text-green-400 mt-1 mr-3" aria-hidden="true"></i><span>Pergunte à IA sobre o ativo que está na tela</span></li>
+        <section class="band" id="planos">
+            <div class="wrap">
+                <h2 class="sec">Planos</h2>
+                <p class="sec-lede">A assinatura ainda não está à venda. Estes são os níveis que estamos preparando — crie a conta agora e acompanhe o lançamento.</p>
+                <div class="plans">
+                    <article class="plan">
+                        <h3>Iniciante</h3>
+                        <p class="plan__price">Valores em breve</p>
+                        <p class="plan__blurb">Para acompanhar o sinal com disciplina e pouco ruído.</p>
+                        <ul>
+                            <li>Dashboard e sinal no perfil conservador</li>
+                            <li>Bitcoin e ativos liberados pela conta</li>
+                            <li>Histórico do sinal no gráfico</li>
                         </ul>
+                        <a class="btn" href="/dashboard/">Criar conta</a>
+                    </article>
+                    <article class="plan plan--featured">
+                        <span class="plan__badge">Recomendado</span>
+                        <h3>Pro</h3>
+                        <p class="plan__price">Valores em breve</p>
+                        <p class="plan__blurb">O advisor completo: sinal, sentimento e conversa.</p>
+                        <ul>
+                            <li>Todos os perfis (conservador → agressivo)</li>
+                            <li>Sentimento e notícias ao lado do gráfico</li>
+                            <li>Chat com a IA no contexto do ativo</li>
+                            <li>Prioridade no acesso a novas features</li>
+                        </ul>
+                        <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
+                    </article>
+                    <article class="plan">
+                        <h3>Institucional</h3>
+                        <p class="plan__price">Sob consulta</p>
+                        <p class="plan__blurb">Para times que precisam de API e acompanhamento.</p>
+                        <ul>
+                            <li>Acesso via API aos sinais</li>
+                            <li>Suporte dedicado</li>
+                            <li>Conversa direta sobre o rollout</li>
+                        </ul>
+                        <a class="btn" href="mailto:contato@aiinvestadvisor.com?subject=CryptoDash%20Pro%20Institucional">Falar conosco</a>
+                    </article>
+                </div>
+                <p class="plan-note">Nenhum plano cobra hoje. Criar conta libera o produto atual; a cobrança só começa quando a assinatura estiver publicada.</p>
+            </div>
+        </section>
 
-                        <a href="/dashboard/" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-bold transition w-full lg:w-auto inline-block text-center">Abrir Dashboard</a>
-                    </div>
-
-                    <div class="bg-gray-700 p-4 flex items-center justify-center">
-                        <div class="demo-container w-full max-w-lg">
-                            <div class="bg-gray-800 rounded-lg overflow-hidden">
-                                <div class="bg-gray-700 p-3 flex items-center">
-                                    <div class="flex space-x-2 mr-4">
-                                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <div class="bg-gray-600 text-xs px-2 py-1 rounded flex-1 text-center">Dashboard</div>
-                                </div>
-                                <div class="p-4">
-                                    <div class="bg-gray-700 rounded-lg h-48 mb-4 flex items-center justify-center">
-                                        <div class="text-center">
-                                            <i class="fas fa-chart-line text-4xl text-blue-500 mb-2" aria-hidden="true"></i>
-                                            <p>O painel de verdade está um clique adiante</p>
-                                            <a href="/dashboard/" class="mt-3 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm inline-block">Abrir Dashboard</a>
-                                        </div>
-                                    </div>
-                                    <div class="bg-gray-700 rounded-lg p-3">
-                                        <p class="text-sm"><span class="text-blue-400 font-bold">Se o sinal não carregar:</span> o dashboard ainda mostra o mercado. Você não fica numa tela vazia.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <section class="cta-band">
+            <div class="wrap band" id="acesso">
+                <h2 class="sec">Comece pelo dashboard</h2>
+                <p class="sec-lede">Abra o painel, crie a conta e veja o sinal ao vivo. Depois, quando os planos saírem, você já estará dentro.</p>
+                <div class="btn-row">
+                    <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
+                    <a class="btn btn--ghost" href="/dashboard/">Abrir Dashboard</a>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
-    <section id="pricing" class="py-20 px-6 bg-gray-900">
-        <div class="container mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">Planos</h2>
-                <p class="text-xl text-gray-400 max-w-3xl mx-auto">Ainda não vendemos acesso. Os valores abaixo são só uma prévia — os botões ainda não cadastram ninguém.</p>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <div class="pricing-card bg-gray-800 rounded-xl p-8 transition">
-                    <h3 class="text-xl font-bold mb-2">Iniciante</h3>
-                    <p class="text-gray-400 mb-6">Dashboard e o sinal de IA no perfil conservador</p>
-                    <div class="mb-6"><span class="text-4xl font-bold">R$99</span><span class="text-gray-400">/mês</span></div>
-                    <button type="button" class="w-full bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-medium transition" disabled>Ainda não está à venda</button>
-                </div>
-                <div class="pricing-card bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl p-8 transition transform scale-105">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h3 class="text-xl font-bold mb-2">Pro</h3>
-                            <p class="text-blue-200 mb-6">Sinal completo, todos os perfis, sentimento e chat</p>
-                        </div>
-                        <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">Em estudo</span>
-                    </div>
-                    <div class="mb-6"><span class="text-4xl font-bold">R$299</span><span class="text-blue-200">/mês</span></div>
-                    <button type="button" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition" disabled>Ainda não está à venda</button>
-                </div>
-                <div class="pricing-card bg-gray-800 rounded-xl p-8 transition">
-                    <h3 class="text-xl font-bold mb-2">Institucional</h3>
-                    <p class="text-gray-400 mb-6">Acesso via API e conversa direta</p>
-                    <div class="mb-6"><span class="text-4xl font-bold">R$999</span><span class="text-gray-400">/mês</span></div>
-                    <button type="button" class="w-full bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-medium transition" disabled>Ainda não está à venda</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="bg-gray-900 py-12 px-6">
-        <div class="container mx-auto">
-            <div class="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-gray-400 mb-4 md:mb-0">© 2026 CryptoDash Pro. Conteúdo educacional, não é recomendação financeira. A decisão de investir é sempre sua.</p>
-                <div class="flex space-x-6">
-                    <a href="/dashboard/" class="text-gray-400 hover:text-white transition">Dashboard</a>
-                    <a href="#features" class="text-gray-400 hover:text-white transition">O que entra</a>
-                    <a href="#pricing" class="text-gray-400 hover:text-white transition">Planos</a>
-                </div>
-            </div>
+    <footer>
+        <div class="wrap">
+            <p>© 2026 CryptoDash Pro. Conteúdo educacional, não é recomendação financeira. A decisão de investir é sempre sua.</p>
+            <a href="/dashboard/">Dashboard</a>
         </div>
     </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const menuBtn = document.querySelector('nav button.md\\:hidden');
-            if (menuBtn) {
-                menuBtn.addEventListener('click', () => {
-                    window.location.href = '/dashboard/';
-                });
-            }
-
+            const card = document.getElementById('signal-card');
             const priceEl = document.getElementById('hero-btc-price');
             const changeEl = document.getElementById('hero-btc-change');
             const recoEl = document.getElementById('hero-recommendation');
             const recoDetailsEl = document.getElementById('hero-recommendation-details');
+            const whenEl = document.getElementById('hero-when');
+            const targetEl = document.getElementById('hero-target');
+            const stopEl = document.getElementById('hero-stop');
+            let loadGen = 0;
+            let currentRun = null;
 
-            function getRecommendationsBase() {
-                const params = new URLSearchParams(window.location.search);
-                const fromQuery = params.get('recommendationsBase');
-                if (fromQuery) return fromQuery;
-
-                const fromStorage = window.localStorage.getItem('recommendationsBase');
-                if (fromStorage) return fromStorage;
-
+            function recoBase() {
                 const host = window.location.hostname;
                 const isLocal = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
-                if (isLocal) return 'http://127.0.0.1:8000';
+                return isLocal ? 'http://127.0.0.1:8000' : '/api/reco';
+            }
 
-                return '/api/reco';
+            function fetchJson(url, ms, signal) {
+                const ctrl = new AbortController();
+                const timer = setTimeout(function() { ctrl.abort(); }, ms || 8000);
+                if (signal) {
+                    if (signal.aborted) ctrl.abort();
+                    else signal.addEventListener('abort', function() { ctrl.abort(); }, { once: true });
+                }
+                return fetch(url, { headers: { Accept: 'application/json' }, signal: ctrl.signal })
+                    .then(function(res) {
+                        if (!res.ok) {
+                            const err = new Error('http');
+                            err.status = res.status;
+                            throw err;
+                        }
+                        return res.json();
+                    })
+                    .finally(function() { clearTimeout(timer); });
             }
 
             function labelReco(reco) {
@@ -354,72 +675,153 @@
 
             function setRecoStyle(reco) {
                 if (!recoEl) return;
-                recoEl.className = 'font-bold';
+                recoEl.className = 'signal__reco';
                 const normalized = String(reco || '').toLowerCase();
-                if (normalized.includes('buy') || normalized.includes('compra')) recoEl.classList.add('text-green-400');
-                else if (normalized.includes('sell') || normalized.includes('venda')) recoEl.classList.add('text-red-400');
-                else if (normalized.includes('hold') || normalized.includes('manter')) recoEl.classList.add('text-yellow-400');
-                else recoEl.classList.add('text-gray-300');
+                if (normalized.includes('buy') || normalized.includes('compra')) recoEl.classList.add('num-up');
+                else if (normalized.includes('sell') || normalized.includes('venda')) recoEl.classList.add('num-down');
+                else if (normalized.includes('hold') || normalized.includes('manter')) recoEl.classList.add('num-hold');
+            }
+
+            function fmtMoney(v) {
+                const n = Number(v);
+                if (!isFinite(n)) return '—';
+                return new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 2
+                }).format(n);
+            }
+
+            function fmtWhen(date, time) {
+                const raw = String(date || '').trim() + (time ? ' ' + String(time).trim() : '');
+                if (!raw.trim()) return '—';
+                const iso = raw.includes('T') ? raw : raw.replace(' ', 'T');
+                const d = new Date(iso);
+                if (!isNaN(d.getTime())) {
+                    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(d);
+                }
+                return raw.length > 32 ? raw.slice(0, 32) + '…' : raw;
+            }
+
+            function setNote(nodes) {
+                if (!recoDetailsEl) return;
+                recoDetailsEl.replaceChildren();
+                nodes.forEach(function(n) { recoDetailsEl.appendChild(n); });
+            }
+
+            function textNode(s) { return document.createTextNode(s); }
+
+            function dashLink() {
+                const a = document.createElement('a');
+                a.href = '/dashboard/';
+                a.textContent = 'Abra o dashboard';
+                return a;
+            }
+
+            function retryBtn() {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn--quiet';
+                b.textContent = 'Tentar de novo';
+                b.addEventListener('click', function() { loadHeroData(); });
+                return b;
+            }
+
+            function failReason(err) {
+                if (!navigator.onLine) return 'Sem conexão. ';
+                if (err && err.name === 'AbortError') return 'A busca demorou demais. ';
+                if (err && err.status === 404) return 'Ainda não há sinal publicado para Bitcoin. ';
+                if (err && err.status >= 500) return 'O serviço de sinais falhou. ';
+                return 'Não foi possível carregar o sinal agora. ';
             }
 
             async function loadHeroData() {
+                if (currentRun) currentRun.abort();
+                const gen = ++loadGen;
+                currentRun = new AbortController();
+                const run = currentRun;
+
+                if (card) {
+                    card.setAttribute('aria-busy', 'true');
+                    card.classList.remove('is-error');
+                }
+                setNote([textNode('Buscando o último sinal…')]);
+
                 try {
-                    const tickerRes = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', {
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    if (tickerRes.ok) {
-                        const ticker = await tickerRes.json();
-                        const price = Number(ticker.lastPrice);
-                        const change = Number(ticker.priceChangePercent);
-                        if (priceEl) {
-                            priceEl.textContent = isFinite(price) ? `US$ ${price.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}` : '—';
-                            priceEl.className = 'text-gray-100 mr-2';
-                        }
-                        if (changeEl) {
-                            changeEl.textContent = isFinite(change) ? `${change.toFixed(2).replace('.', ',')}%` : '—';
-                            changeEl.className = !isFinite(change) ? 'text-gray-300' : (change >= 0 ? 'text-green-400' : 'text-red-400');
+                    const ticker = await fetchJson('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', 8000, run.signal);
+                    if (gen !== loadGen) return;
+                    const price = Number(ticker.lastPrice);
+                    const change = Number(ticker.priceChangePercent);
+                    if (priceEl) priceEl.textContent = isFinite(price) ? fmtMoney(price) : '—';
+                    if (changeEl) {
+                        if (!isFinite(change)) {
+                            changeEl.textContent = '—';
+                            changeEl.className = '';
+                            changeEl.removeAttribute('aria-label');
+                        } else {
+                            const sign = change > 0 ? '+' : '';
+                            changeEl.textContent = sign + change.toFixed(2).replace('.', ',') + '%';
+                            changeEl.className = change >= 0 ? 'num-up' : 'num-down';
+                            changeEl.setAttribute('aria-label', 'Variação em 24 horas: ' + changeEl.textContent);
                         }
                     }
                 } catch (_) {
-                    if (priceEl) {
-                        priceEl.textContent = '—';
-                        priceEl.className = 'text-gray-300 mr-2';
-                    }
+                    if (gen !== loadGen) return;
+                    if (priceEl) priceEl.textContent = '—';
                     if (changeEl) {
                         changeEl.textContent = '—';
-                        changeEl.className = 'text-gray-300';
+                        changeEl.className = '';
+                        changeEl.removeAttribute('aria-label');
                     }
+                }
+
+                const base = recoBase().replace(/\/$/, '');
+                let recoOk = false;
+
+                try {
+                    const data = await fetchJson(base + '/last_recommendation?model_name=CNN&crypto=BTC', 8000, run.signal);
+                    if (gen !== loadGen) return;
+                    if (data && data.error) throw new Error('empty');
+                    const reco = data.recommendation ?? data.Recommendation ?? '';
+                    if (recoEl) recoEl.textContent = labelReco(reco);
+                    setRecoStyle(reco);
+                    if (whenEl) whenEl.textContent = fmtWhen(data.Date ?? data.date, data.Time ?? data.time);
+                    const signalPrice = data.Price ?? data.price;
+                    setNote([textNode(signalPrice != null ? 'Preço no sinal: ' + fmtMoney(signalPrice) : 'Sinal carregado.')]);
+                    recoOk = true;
+                } catch (err) {
+                    if (gen !== loadGen) return;
+                    if (recoEl) {
+                        recoEl.textContent = 'Indisponível';
+                        recoEl.className = 'signal__reco';
+                    }
+                    if (whenEl) whenEl.textContent = '—';
+                    if (card) card.classList.add('is-error');
+                    const wrap = document.createElement('div');
+                    wrap.appendChild(textNode(failReason(err)));
+                    wrap.appendChild(dashLink());
+                    wrap.appendChild(textNode(' para ver o mercado mesmo assim.'));
+                    wrap.appendChild(document.createElement('br'));
+                    wrap.appendChild(retryBtn());
+                    setNote([wrap]);
                 }
 
                 try {
-                    const base = getRecommendationsBase().replace(/\/$/, '');
-                    const url = `${base}/last_recommendation?model_name=CNN&crypto=BTC`;
-                    const recoRes = await fetch(url, { headers: { 'Accept': 'application/json' } });
-                    if (!recoRes.ok) throw new Error('failed');
-                    const data = await recoRes.json();
-
-                    const reco = data?.recommendation ?? data?.Recommendation ?? '';
-                    if (recoEl) recoEl.textContent = labelReco(reco);
-                    setRecoStyle(reco);
-
-                    const price = data?.Price ?? data?.price;
-                    const date = data?.Date ?? data?.date;
-                    const time = data?.Time ?? data?.time;
-                    if (recoDetailsEl) {
-                        const parts = [];
-                        if (date || time) parts.push(`${date || ''} ${time || ''}`.trim());
-                        if (price != null) parts.push(`Preço no sinal: ${price}`);
-                        recoDetailsEl.innerHTML = `<span class="text-blue-400 font-bold">IA:</span> ${parts.length ? parts.join(' • ') : 'Sinal carregado'}`;
+                    const ts = await fetchJson(base + '/last_target_stop?model_name=CNN&crypto=BTC&profile=moderate', 8000, run.signal);
+                    if (gen !== loadGen) return;
+                    if (ts && !ts.error) {
+                        if (targetEl) targetEl.textContent = fmtMoney(ts.target ?? ts.Target);
+                        if (stopEl) stopEl.textContent = fmtMoney(ts.stop_loss ?? ts.StopLoss ?? ts.stop);
                     }
                 } catch (_) {
-                    if (recoEl) {
-                        recoEl.textContent = 'Indisponível';
-                        recoEl.className = 'font-bold text-gray-400';
-                    }
-                    if (recoDetailsEl) {
-                        recoDetailsEl.innerHTML = `<span class="text-blue-400 font-bold">IA:</span> Não foi possível carregar o sinal agora. <a href="/dashboard/" class="underline hover:text-white">Abra o dashboard</a> para ver o mercado mesmo assim.`;
+                    if (gen !== loadGen) return;
+                    if (recoOk && recoDetailsEl && recoDetailsEl.textContent.indexOf('Preço no sinal') === 0) {
+                        recoDetailsEl.appendChild(textNode(' Alvo e stop não vieram nesta resposta.'));
                     }
                 }
+
+                if (gen !== loadGen) return;
+                if (card) card.setAttribute('aria-busy', 'false');
             }
 
             loadHeroData();
