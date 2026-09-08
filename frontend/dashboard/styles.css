@@ -2163,7 +2163,7 @@ body:has(.ai-chat-banner--success) #ai-chat-input.ai-chat-input-locked {
 #mobile-nav-drawer {
     animation: tb-fade-in 180ms ease-out;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
     #mobile-nav-drawer { display: none !important; }
 }
 

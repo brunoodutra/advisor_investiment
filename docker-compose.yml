@@ -9,8 +9,10 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    volumes:                       # ← ADICIONAR ESTE BLOCO
-      - ./frontend/:/usr/share/nginx/html/:ro
+    # Bind mount WSL→Docker Desktop chega vazio e esconde o COPY da imagem (GET / = 403).
+    # Para live-edit, habilite WSL Integration no Docker Desktop e descomente:
+    # volumes:
+    #   - ./frontend/:/usr/share/nginx/html/:ro
   api:
     build:
       context: .

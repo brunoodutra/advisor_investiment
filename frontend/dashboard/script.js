@@ -153,19 +153,33 @@ function initMobileNav() {
     function syncToggleIcon() {
         if (!toggleBtn) return;
         const icon = toggleBtn.querySelector('i');
-        const open = drawer && !drawer.classList.contains('hidden');
+        const open = drawer && !drawer.hidden && !drawer.classList.contains('hidden');
+        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggleBtn.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
         if (icon) icon.className = open ? 'fas fa-times' : 'fas fa-bars';
     }
 
     function closeDrawer() {
-        if (drawer) drawer.classList.add('hidden');
+        if (drawer) {
+            drawer.classList.add('hidden');
+            drawer.hidden = true;
+        }
+        syncToggleIcon();
+    }
+
+    function openDrawer() {
+        if (drawer) {
+            drawer.classList.remove('hidden');
+            drawer.hidden = false;
+        }
         syncToggleIcon();
     }
 
     if (toggleBtn && drawer) {
         toggleBtn.addEventListener('click', () => {
-            drawer.classList.toggle('hidden');
-            syncToggleIcon();
+            const isOpen = !drawer.hidden && !drawer.classList.contains('hidden');
+            if (isOpen) closeDrawer();
+            else openDrawer();
         });
     }
 
@@ -215,9 +229,9 @@ function initMobileNav() {
     if (deskBadge) observer.observe(deskBadge, { attributes: true, childList: true, subtree: false, attributeFilter: ['style', 'id'] });
     syncAlertBadge();
 
-    // Fechar drawer ao redimensionar para ≥ md
+    // Fechar drawer ao redimensionar para desktop (lg)
     window.addEventListener('resize', () => {
-        if (window.innerWidth >= 768) closeDrawer();
+        if (window.innerWidth >= 1024) closeDrawer();
     });
 }
 

@@ -10,6 +10,7 @@ target_fingerprint: "sha256:5d5c0e4e22685c33e0dc03df8313f4bd0bfa298232a35a595bf4
 target_path: /home/bdutra/projects/advisor_investiment/frontend/index.html
 timestamp: 2026-09-06T16-53-58Z
 slug: frontend-index-html
+closed: true
 ---
 Method: dual-agent (A: 1744a087-b32d-4786-8407-f14ff41ad70d · B: 07796765-dd9b-4950-9fd0-f8a52023423e)
 

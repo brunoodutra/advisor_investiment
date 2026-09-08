@@ -3,43 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoDash Pro | Sinais de compra e venda com IA</title>
-    <meta name="description" content="Advisor de cripto com sinais de deep learning, sentimento e chat. Cadastre-se para liberar mais ativos, alvo e stop por perfil.">
+    <title>CryptoDash Pro — Plano de compra, venda ou manter</title>
+    <meta name="description" content="Advisor de cripto: plano com entrada, alvo e stop, gerado por modelo CNN ao vivo. Sentimento, Fear & Greed e Market Exit como contexto. Conteúdo educacional.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ground: #07111f;
-            --panel: #0c1a2e;
-            --panel-2: #12233b;
-            --hair: #1e3a5f;
-            --ink: #e8eef8;
-            --muted: #8ba3c4;
-            --accent: #3b82f6;
-            --accent-hi: #60a5fa;
-            --focus: #60a5fa;
-            --up: #3fb950;
-            --down: #f85149;
-            --hold: #d29922;
-            --sans: "Sora", system-ui, sans-serif;
+            --background: oklch(19% .006 265);
+            --foreground: oklch(94% .004 90);
+            --card: oklch(23% .006 265);
+            --muted: oklch(27% .005 265);
+            --muted-foreground: oklch(68% .008 265);
+            --border: oklch(32% .006 265);
+            --primary: oklch(77% .115 84);
+            --primary-foreground: oklch(19% .01 80);
+            --brass: oklch(77% .115 84);
+            --brass-dim: oklch(55% .075 84);
+            --signal-long: oklch(75% .14 155);
+            --signal-short: oklch(65% .17 25);
+            --signal-hold: oklch(78% .09 90);
+            --shadow-panel: 0 1px 0 0 oklch(100% 0 0 / .06) inset, 0 24px 60px -30px oklch(0% 0 0 / .8);
+            --sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
             --mono: "IBM Plex Mono", ui-monospace, monospace;
+            --ground: var(--background);
+            --panel: var(--card);
+            --panel-2: oklch(21% .006 265);
+            --hair: var(--border);
+            --ink: var(--foreground);
+            --accent: var(--brass);
+            --accent-hi: var(--brass);
+            --ink-on-accent: var(--primary-foreground);
+            --focus: var(--brass);
+            --up: var(--signal-long);
+            --down: var(--signal-short);
+            --hold: var(--signal-hold);
         }
         *, *::before, *::after { box-sizing: border-box; }
         html { color-scheme: dark; scroll-behavior: smooth; }
         body {
             margin: 0;
-            background: var(--ground);
-            color: var(--ink);
+            background: var(--background);
+            color: var(--foreground);
             font-family: var(--sans);
             font-size: 1rem;
             font-weight: 400;
             line-height: 1.55;
             overflow-x: hidden;
+            caret-color: var(--brass);
+            -webkit-font-smoothing: antialiased;
         }
-        ::selection { background: rgba(96, 165, 250, 0.35); color: var(--ink); }
-        :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-        a { color: inherit; }
+        h1, h2, h3 { letter-spacing: -0.025em; }
+        ::selection { background: color-mix(in oklab, var(--brass) 35%, transparent); color: var(--foreground); }
+        :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+        a { color: inherit; text-underline-offset: 0.2em; }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--background); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border: 2px solid var(--background); }
 
         .skip {
             position: absolute;
@@ -47,404 +67,896 @@
             top: 0.75rem;
             z-index: 40;
             padding: 0.5rem 0.85rem;
-            background: var(--ink);
-            color: var(--ground);
+            background: var(--foreground);
+            color: var(--background);
             text-decoration: none;
             font-weight: 600;
             font-size: 0.875rem;
             transform: translateY(-200%);
         }
         .skip:focus { transform: none; }
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
 
         .wrap {
-            max-width: 68rem;
+            max-width: 72rem;
             margin: 0 auto;
             padding-inline: 1.5rem;
         }
-        .measure { max-width: 40rem; }
+        .label-mono {
+            font-family: var(--mono);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted-foreground);
+            font-size: 0.6875rem;
+            font-weight: 500;
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-panel);
+        }
 
         nav {
             position: sticky;
             top: 0;
-            z-index: 20;
-            background: rgba(7, 17, 31, 0.92);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--hair);
+            z-index: 30;
+            background: color-mix(in oklab, var(--background) 90%, transparent);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
         }
         nav .wrap {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
             align-items: center;
-            gap: 0.75rem 1rem;
-            min-height: 3.5rem;
-            flex-wrap: wrap;
+            gap: 1rem;
+            min-height: 4.25rem;
         }
         .brand {
             text-decoration: none;
-            font-weight: 600;
-            letter-spacing: -0.02em;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            font-size: 1.125rem;
             min-width: 0;
         }
-        .brand span { color: var(--accent-hi); font-weight: 500; }
-        .nav-links {
+        .brand span { color: var(--brass); }
+        .nav-cluster {
             display: flex;
             align-items: center;
-            gap: 0.75rem 1.25rem;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            min-width: 0;
+            gap: 1.5rem;
         }
-        .nav-links a:not(.btn) {
+        .nav-links {
+            display: none;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        @media (min-width: 800px) {
+            .nav-links { display: flex; }
+        }
+        .nav-links a {
             text-decoration: none;
-            color: var(--muted);
-            font-size: 0.9rem;
-            font-weight: 500;
-            padding-block: 0.4rem;
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            min-height: 2.75rem;
+            display: inline-flex;
+            align-items: center;
         }
-        .nav-links a:not(.btn):hover { color: var(--ink); }
+        .nav-links a:hover { color: var(--foreground); }
+        .nav-links a[aria-current="true"] { color: var(--foreground); }
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             text-decoration: none;
-            border: 1px solid var(--hair);
-            background: var(--panel);
-            color: var(--ink);
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--foreground);
             padding: 0.7rem 1.1rem;
             min-height: 2.75rem;
             font-family: inherit;
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
-            letter-spacing: 0.01em;
             cursor: pointer;
-            transition: background 120ms ease-out, border-color 120ms ease-out, filter 120ms ease-out;
+            transition: opacity 150ms ease, background 150ms ease;
             white-space: nowrap;
         }
-        .btn:hover { border-color: var(--muted); background: var(--panel-2); }
+        .btn:hover { background: oklch(28% .006 265); }
         .btn:disabled { opacity: 0.55; cursor: not-allowed; }
         .btn--primary {
-            background: var(--accent);
-            color: #f8fbff;
-            border-color: rgba(232, 238, 248, 0.12);
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border-color: transparent;
         }
-        .btn--primary:hover:not(:disabled) {
-            filter: brightness(1.08);
-            background: var(--accent);
-            border-color: rgba(232, 238, 248, 0.12);
-        }
+        .btn--primary:hover:not(:disabled) { opacity: 0.9; background: var(--primary); }
         .btn--ghost {
             background: transparent;
-            border-color: rgba(232, 238, 248, 0.28);
-            color: var(--ink);
         }
-        .btn--ghost:hover { background: rgba(232, 238, 248, 0.06); border-color: var(--muted); }
+        .btn--ghost:hover { background: oklch(28% .006 265); }
         .btn--quiet {
-            min-height: 2.5rem;
-            font-size: 0.875rem;
-            margin-top: 0.65rem;
+            min-height: 2.25rem;
+            font-size: 0.8125rem;
+            padding: 0.35rem 0.65rem;
+            margin-inline-start: 0.35rem;
         }
         .btn-row {
             display: flex;
             flex-wrap: wrap;
             gap: 0.75rem;
+            margin-top: 2.25rem;
         }
 
         .hero-shell {
-            background:
-                radial-gradient(ellipse 80% 60% at 15% 0%, rgba(30, 58, 138, 0.45), transparent 55%),
-                radial-gradient(ellipse 50% 40% at 90% 20%, rgba(59, 130, 246, 0.12), transparent 50%),
-                var(--ground);
-            border-bottom: 1px solid var(--hair);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+        }
+        .hero-shell__photo {
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.2;
         }
         .hero {
-            padding: 4.5rem 0 5rem;
+            position: relative;
             display: grid;
-            grid-template-columns: 1.05fr 0.95fr;
-            gap: 3.5rem;
+            gap: 3rem;
+            padding: 4rem 0 5rem;
             align-items: start;
         }
-        .hero > * { min-width: 0; }
-        h1 {
-            margin: 0 0 1.25rem;
-            font-size: clamp(1.75rem, 3.2vw, 2.45rem);
-            font-weight: 600;
+        @media (min-width: 1024px) {
+            .hero {
+                grid-template-columns: 0.95fr 1.05fr;
+                padding: 6rem 0;
+            }
+        }
+        .hero__kicker { margin: 0; }
+        .hero__brand {
+            margin: 1.25rem 0 0;
+            font-size: clamp(2.75rem, 8vw, 3.75rem);
+            font-weight: 700;
             letter-spacing: -0.03em;
-            line-height: 1.2;
-            overflow-wrap: anywhere;
+            line-height: 0.95;
+        }
+        .hero__brand span { color: var(--brass); }
+        .hero__claim {
+            margin: 1.5rem 0 0;
+            font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+            max-width: 28rem;
         }
         .lede {
-            margin: 0 0 1.75rem;
-            color: var(--muted);
-            font-size: 1.05rem;
-            max-width: 38rem;
+            margin: 1rem 0 0;
+            color: var(--muted-foreground);
+            max-width: 32rem;
         }
+        .hero__facts {
+            margin: 1.75rem 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0.65rem;
+            max-width: 28rem;
+        }
+        .hero__facts li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+        }
+        .hero__facts li::before {
+            content: "";
+            width: 0.375rem;
+            height: 0.375rem;
+            margin-top: 0.5em;
+            flex-shrink: 0;
+            background: var(--brass);
+        }
+        .hero__hint {
+            margin: 1.25rem 0 0;
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+        .hero__hint a { color: var(--brass); }
 
         .signal {
-            background: var(--panel);
-            border: 1px solid var(--hair);
-            padding: 1.25rem 1.35rem 1.15rem;
             min-width: 0;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+            scroll-margin-top: 6rem;
         }
-        .signal[aria-busy="true"] { opacity: 0.85; }
-        .signal.is-error { border-color: rgba(248, 81, 73, 0.45); }
-        .signal__meta {
-            margin: 0 0 1rem;
-            font-size: 0.8125rem;
-            color: var(--muted);
-        }
-        .signal__head {
+        .signal[aria-busy="true"] .signal__reco { opacity: 0.55; }
+        .signal.is-error { border-color: color-mix(in oklab, var(--signal-short) 45%, var(--border)); }
+        .signal.is-chart-error .signal__chart-fallback { display: grid; }
+
+        .signal__bar {
             display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .signal__live,
+        .records__live {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--signal-long);
+        }
+        .signal__live::before {
+            content: "";
+            width: 0.375rem;
+            height: 0.375rem;
+            border-radius: 50%;
+            background: var(--signal-long);
+            animation: pulse 2s cubic-bezier(.4, 0, .6, 1) infinite;
+        }
+        @keyframes pulse {
+            50% { opacity: 0.45; }
         }
         .signal h2 {
             margin: 0;
-            font-size: 1.15rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
+            font-family: var(--mono);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .signal__tf {
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            border: 1px solid var(--border);
+            padding: 0.15rem 0.5rem;
+        }
+        .signal__meta {
+            margin: 0 0 0 auto;
+            font-family: var(--mono);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted-foreground);
+            font-size: 0.6875rem;
+        }
+        .signal__quote {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem 0;
         }
         .signal__px {
-            font-family: var(--mono);
-            font-size: 0.9rem;
-            font-weight: 500;
-            font-variant-numeric: tabular-nums;
-            text-align: end;
-            min-width: 0;
-            overflow-wrap: anywhere;
-        }
-        .signal dl {
-            margin: 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem 1.25rem;
-        }
-        .signal dl > div { min-width: 0; }
-        .signal dt {
-            font-size: 0.8125rem;
-            color: var(--muted);
-            margin-bottom: 0.2rem;
-        }
-        .signal dd {
             margin: 0;
             font-family: var(--mono);
-            font-size: 0.95rem;
-            font-weight: 500;
+            font-size: clamp(1.6rem, 3vw, 1.875rem);
             font-variant-numeric: tabular-nums;
-            overflow-wrap: anywhere;
         }
-        .signal__reco { font-size: 1.35rem; font-weight: 600; }
-        .num-up { color: var(--up); }
-        .num-down { color: var(--down); }
-        .num-hold { color: var(--hold); }
-        .signal__note {
-            margin: 1.15rem 0 0;
-            padding-top: 1rem;
-            border-top: 1px solid var(--hair);
+        .signal__chg {
+            margin: 0.35rem 0 0;
+            font-family: var(--mono);
             font-size: 0.875rem;
-            color: var(--muted);
         }
-        .signal__note a { color: var(--accent-hi); }
+        .signal__verdict { text-align: end; }
+        .signal__verdict-label { margin: 0; }
+        .signal__reco {
+            margin: 0.25rem 0 0;
+            font-family: var(--mono);
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--brass);
+        }
+        .signal[data-side="buy"] .signal__reco { color: var(--signal-long); }
+        .signal[data-side="sell"] .signal__reco { color: var(--signal-short); }
+        .signal[data-side="hold"] .signal__reco { color: var(--signal-hold); }
+        .signal__conf,
+        .signal__when {
+            margin: 0.15rem 0 0;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+        .num-up { color: var(--signal-long); }
+        .num-down { color: var(--signal-short); }
+        .num-hold { color: var(--signal-hold); }
 
-        .band { padding: 4rem 0 4.5rem; }
-        .band + .band { border-top: 1px solid var(--hair); }
-        h2.sec {
-            margin: 0 0 0.75rem;
-            font-size: 1.45rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
+        .signal__chart-wrap {
+            position: relative;
+            margin-top: 1rem;
+            padding-inline: 1rem;
+            min-height: 13rem;
+            height: 13rem;
         }
-        .sec-lede {
-            margin: 0 0 2.25rem;
-            color: var(--muted);
-            max-width: 40rem;
+        .signal__chart { width: 100%; height: 100%; }
+        .signal__chart-fallback {
+            display: none;
+            place-items: center;
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+            background: color-mix(in oklab, var(--background) 92%, transparent);
         }
+        .signal__chart-fallback a { color: var(--brass); }
 
-        .features {
+        .signal__metrics {
+            margin: 0;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
+            border-block: 1px solid var(--border);
         }
-        .feature {
-            background: var(--panel);
-            border: 1px solid var(--hair);
-            padding: 1.25rem 1.3rem;
+        .signal__metrics > div {
             min-width: 0;
+            padding: 1rem;
+            border-inline-end: 1px solid var(--border);
         }
-        .feature h3 {
-            margin: 0 0 0.45rem;
-            font-size: 1.02rem;
+        .signal__metrics > div:last-child { border-inline-end: 0; }
+        .signal__metrics dt {
+            font-family: var(--mono);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted-foreground);
+            font-size: 0.6875rem;
+            margin-bottom: 0.4rem;
+        }
+        .signal__metrics dd {
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 0.875rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .signal__metrics .is-entry { color: var(--brass); }
+        .signal__metrics .is-target { color: var(--signal-long); }
+        .signal__metrics .is-stop { color: var(--signal-short); }
+        .signal__metric-note {
+            margin: 0.35rem 0 0;
+            font-size: 0.6875rem;
+            color: var(--muted-foreground);
+        }
+        .signal__note {
+            margin: 0;
+            padding: 1rem 1.5rem;
+            font-size: 0.8rem;
+            color: var(--muted-foreground);
+        }
+        .signal__note a { color: var(--brass); }
+
+        .signal__history { padding: 1rem 1.5rem 1.25rem; }
+        .signal__history-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .signal__history-title {
+            margin: 0;
+            font-family: var(--mono);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted-foreground);
+            font-size: 0.6875rem;
+            font-weight: 500;
+        }
+        .signal__history-wrap { overflow-x: auto; margin-top: 0.75rem; }
+        .signal__history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .signal__history-table th {
+            text-align: start;
+            font-family: var(--mono);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted-foreground);
+            font-size: 0.6875rem;
+            font-weight: 400;
+            padding: 0 0 0.5rem;
+        }
+        .signal__history-table th:nth-child(3),
+        .signal__history-table th:nth-child(4),
+        .signal__history-table td:nth-child(3),
+        .signal__history-table td:nth-child(4) { text-align: end; }
+        .signal__history-table td {
+            padding: 0.65rem 0;
+            border-top: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            vertical-align: middle;
+        }
+        .records__pair { display: flex; flex-direction: column; gap: 0.15rem; }
+        .records__pair strong {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+        }
+        .records__pair span { display: none; }
+        .records__side,
+        .records__pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            padding: 0.15rem 0.5rem;
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .records__side[data-side="buy"],
+        .records__pill[data-tone="buy"] {
+            color: var(--signal-long);
+            border-color: color-mix(in oklab, var(--signal-long) 40%, transparent);
+        }
+        .records__side[data-side="sell"],
+        .records__pill[data-tone="sell"] {
+            color: var(--signal-short);
+            border-color: color-mix(in oklab, var(--signal-short) 40%, transparent);
+        }
+        .records__side[data-side="hold"],
+        .records__pill[data-tone="hold"] {
+            color: var(--signal-hold);
+            border-color: color-mix(in oklab, var(--signal-hold) 40%, transparent);
+        }
+        .records__result { font-variant-numeric: tabular-nums; }
+        .records__empty,
+        .records__loading {
+            margin: 0;
+            color: var(--muted-foreground);
+        }
+        .signal__history-foot {
+            margin: 1rem 0 0;
+            font-size: 0.6875rem;
+            color: var(--muted-foreground);
+        }
+        .signal__history-foot a { color: var(--brass); }
+
+        .band {
+            padding: 5rem 0;
+            border-bottom: 1px solid var(--border);
+            scroll-margin-top: 5.5rem;
+        }
+        .band:last-of-type { border-bottom: 0; }
+        .sec {
+            margin: 1rem 0 0;
+            font-size: clamp(1.75rem, 3vw, 2.25rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            max-width: 36rem;
+            text-wrap: balance;
+        }
+        .sec-lede {
+            margin: 0.85rem 0 0;
+            color: var(--muted-foreground);
+            max-width: 36rem;
+        }
+
+        .prova-band { background: transparent; }
+        .proof-grid {
+            margin-top: 2.5rem;
+            display: grid;
+            gap: 1px;
+            background: var(--border);
+        }
+        @media (min-width: 1024px) {
+            .proof-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .showcase {
+            background: var(--card);
+            padding: 2rem;
+            box-shadow: none;
+            border: 0;
+            margin: 0;
+        }
+        .showcase__head { padding: 0; border: 0; }
+        .showcase__head h3 {
+            margin: 0;
+            font-size: 1.25rem;
             font-weight: 600;
         }
-        .feature p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.95rem;
+        .showcase__head p {
+            margin: 0.5rem 0 0;
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
         }
-        .feature__mark {
+        .sent-split {
+            margin-top: 1.75rem;
+            display: grid;
+            gap: 2rem;
+        }
+        @media (min-width: 640px) {
+            .sent-split { grid-template-columns: 1fr 1fr; }
+        }
+        .sent-badge {
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 1.125rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .sent-badge[data-tone="positive"] { color: var(--signal-long); }
+        .sent-badge[data-tone="negative"] { color: var(--signal-short); }
+        .sent-badge[data-tone="middle"] { color: var(--signal-hold); }
+        .sent-badge.is-loading { opacity: 0.45; }
+        .sent-conf {
+            margin: 0.5rem 0 0;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+        .sent-drivers {
+            margin: 1rem 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 0.45rem;
+        }
+        .sent-drivers li {
+            font-size: 0.875rem;
+            color: var(--foreground);
+        }
+        .sent-note {
+            margin: 1rem 0 0;
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+        .sent-note a { color: var(--brass); }
+        .fg-gauge { text-align: center; }
+        .fg-gauge__value {
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 3rem;
+            font-weight: 500;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .fg-gauge__label {
+            margin: 0.25rem 0 0;
+            font-weight: 500;
+            color: var(--brass);
+        }
+        .fg-gauge__bar {
+            margin-top: 1rem;
+            height: 0.375rem;
+            background: oklch(28% .006 265);
+            overflow: hidden;
+        }
+        .fg-gauge__fill {
             display: block;
-            width: 1.5rem;
-            height: 2px;
-            background: var(--accent);
-            margin-bottom: 0.85rem;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--signal-short), var(--brass), var(--signal-long));
+            transition: width 680ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fg-gauge__hint {
+            margin: 0.5rem 0 0;
+            font-size: 0.6875rem;
+            color: var(--muted-foreground);
+        }
+
+        .exit-score {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 1.75rem;
+        }
+        .exit-thermo {
+            flex: 0 0 1.5rem;
+            height: 7rem;
+            background: oklch(28% .006 265);
+            position: relative;
+            overflow: hidden;
+        }
+        .exit-thermo__fill {
+            position: absolute;
+            inset-inline: 0;
+            bottom: 0;
+            height: 52%;
+            background: var(--brass);
+            transition: height 680ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .exit-score__num {
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 2.25rem;
+            color: var(--brass);
+            line-height: 1;
+        }
+        .exit-score__zone {
+            margin: 0.25rem 0 0;
+            font-weight: 600;
+        }
+        .exit-score__rec {
+            margin: 0.25rem 0 0;
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+        .exit-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1.5rem 0 0;
+            padding: 0;
+            list-style: none;
+        }
+        .exit-chips li {
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            padding: 0.25rem 0.65rem;
+            border: 1px solid var(--border);
+            color: var(--muted-foreground);
+        }
+        .exit-chips li.is-live {
+            border-color: color-mix(in oklab, var(--signal-long) 45%, transparent);
+            color: var(--signal-long);
+        }
+        .showcase__disclaimer {
+            margin: 1rem 0 0;
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+
+        .chat-split {
+            display: grid;
+            gap: 3rem;
+            align-items: start;
+        }
+        @media (min-width: 1024px) {
+            .chat-split { grid-template-columns: 0.9fr 1.1fr; }
+        }
+        .chat-demo__tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .chat-demo__chip {
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid color-mix(in oklab, var(--brass) 40%, transparent);
+            color: var(--brass);
+        }
+        .chat-demo__chip.is-on {
+            background: color-mix(in oklab, var(--brass) 10%, transparent);
+        }
+        .chat-cta { margin-top: 2rem; }
+        .chat-thread { padding: 0; }
+        .chat-thread__head {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .chat-thread__body {
+            display: grid;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+        .chat-bubble {
+            padding: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .chat-bubble--user {
+            border: 1px solid color-mix(in oklab, var(--brass) 30%, transparent);
+            background: color-mix(in oklab, var(--brass) 5%, transparent);
+        }
+        .chat-bubble--bot {
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--muted-foreground);
+        }
+        .chat-bubble strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            font-weight: 500;
+            color: var(--muted-foreground);
+        }
+        .chat-bubble--user strong { color: var(--brass); }
+        .chat-typing {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+        .chat-thread__foot {
+            margin: 0;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.6875rem;
+            color: var(--muted-foreground);
+        }
+
+        .flow-grid {
+            margin-top: 2.5rem;
+            display: grid;
+            gap: 1px;
+            background: var(--border);
+        }
+        @media (min-width: 1024px) {
+            .flow-grid { grid-template-columns: 1.6fr 1fr; }
+        }
+        .flow {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            background: var(--card);
+        }
+        .flow li {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .flow li:last-child { border-bottom: 0; }
+        .flow__n {
+            font-family: var(--mono);
+            font-size: 0.875rem;
+            color: var(--brass);
+        }
+        .flow strong { display: block; font-weight: 600; }
+        .flow span {
+            display: block;
+            margin-top: 0.25rem;
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+        }
+        .orbit-col {
+            background: var(--card);
+            padding: 1.5rem;
+        }
+        .orbit {
+            margin: 1.25rem 0 0;
+            padding: 0;
+            list-style: none;
+        }
+        .orbit li {
+            padding: 1rem 0 0;
+            margin-top: 1rem;
+            border-top: 1px solid color-mix(in oklab, var(--brass) 30%, transparent);
+        }
+        .orbit li:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+        .orbit strong { display: block; font-weight: 600; }
+        .orbit span {
+            display: block;
+            margin-top: 0.25rem;
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+        }
+        .src {
+            margin: 1.5rem 0 0;
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
         }
 
         .perks {
-            margin: 0;
+            margin: 2.5rem 0 0;
             padding: 0;
             list-style: none;
-            display: grid;
-            gap: 0;
-            border: 1px solid var(--hair);
-            background: var(--panel);
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-panel);
         }
         .perks li {
             display: grid;
-            grid-template-columns: 7.5rem 1fr;
-            gap: 1rem;
-            padding: 1rem 1.25rem;
-            border-top: 1px solid var(--hair);
-            min-width: 0;
+            gap: 0.25rem;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
         }
         .perks li:first-child { border-top: 0; }
+        @media (min-width: 640px) {
+            .perks li {
+                grid-template-columns: 12.5rem minmax(0, 1fr);
+                gap: 1.5rem;
+                align-items: start;
+            }
+        }
         .perks strong {
-            font-size: 0.9rem;
+            color: var(--brass);
             font-weight: 600;
-            color: var(--accent-hi);
         }
-        .perks span { color: var(--muted); font-size: 0.95rem; }
-
-        .plans {
+        .perks span {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+        }
+        .access {
+            margin-top: 1.5rem;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            align-items: stretch;
+            gap: 1.5rem;
+            align-items: center;
+            padding: 2rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-panel);
         }
-        .plan {
-            background: var(--panel);
-            border: 1px solid var(--hair);
-            padding: 1.35rem 1.3rem 1.4rem;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
+        @media (min-width: 768px) {
+            .access { grid-template-columns: minmax(0, 1fr) auto; }
         }
-        .plan--featured {
-            background: linear-gradient(180deg, #12284a 0%, var(--panel) 55%);
-            border-color: rgba(59, 130, 246, 0.55);
-        }
-        .plan__badge {
-            display: inline-block;
-            margin-bottom: 0.65rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--accent-hi);
-        }
-        .plan h3 {
-            margin: 0 0 0.35rem;
-            font-size: 1.15rem;
+        .access h3 {
+            margin: 0;
+            font-size: 1.25rem;
             font-weight: 600;
         }
-        .plan__price {
-            margin: 0 0 0.85rem;
-            font-family: var(--mono);
-            font-size: 0.9rem;
-            color: var(--muted);
+        .access p {
+            margin: 0.5rem 0 0;
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            max-width: 36rem;
         }
-        .plan__blurb {
-            margin: 0 0 1rem;
-            color: var(--muted);
-            font-size: 0.95rem;
+        .access__aside { }
+        @media (min-width: 768px) {
+            .access__aside { text-align: end; }
         }
-        .plan ul {
-            margin: 0 0 1.35rem;
-            padding: 0;
-            list-style: none;
-            flex: 1;
+        .access__inst {
+            margin: 0.75rem 0 0;
+            font-size: 0.875rem;
         }
-        .plan li {
-            position: relative;
-            padding: 0.35rem 0 0.35rem 1.1rem;
-            color: var(--ink);
-            font-size: 0.92rem;
-        }
-        .plan li::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0.75rem;
-            width: 0.45rem;
-            height: 0.45rem;
-            background: var(--accent);
-        }
-        .plan .btn { width: 100%; }
-        .plan-note {
-            margin: 1.25rem 0 0;
-            font-size: 0.85rem;
-            color: var(--muted);
-        }
-
-        .cta-band {
-            background: linear-gradient(135deg, #0f2748 0%, #0c1a2e 55%, #07111f 100%);
-            border-top: 1px solid var(--hair);
-            border-bottom: 1px solid var(--hair);
-        }
-        .cta-band .sec-lede { margin-bottom: 1.5rem; }
-
-        .src {
-            margin: 2rem 0 0;
-            font-size: 0.8125rem;
-            color: var(--muted);
-        }
+        .access__inst a { color: var(--brass); font-weight: 500; }
 
         footer {
-            padding: 1.5rem 0 2rem;
+            border-top: 1px solid var(--border);
+            padding: 2.5rem 0;
         }
         footer .wrap {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
             gap: 1rem;
-            flex-wrap: wrap;
+        }
+        @media (min-width: 768px) {
+            footer .wrap { grid-template-columns: minmax(0, 1fr) auto; }
         }
         footer p {
             margin: 0;
-            color: var(--muted);
-            font-size: 0.8125rem;
             max-width: 42rem;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: var(--muted-foreground);
         }
         footer a {
-            color: var(--muted);
+            color: var(--brass);
             text-decoration: none;
             font-size: 0.875rem;
             font-weight: 500;
         }
-        footer a:hover { color: var(--ink); }
+        @media (min-width: 768px) {
+            footer a { text-align: end; }
+        }
 
-        @media (max-width: 960px) {
-            .features, .plans { grid-template-columns: 1fr; }
-            .plan--featured { order: -1; }
-        }
-        @media (max-width: 800px) {
-            .hero { grid-template-columns: 1fr; gap: 2.25rem; padding: 2.5rem 0 3rem; }
-            .perks li { grid-template-columns: 1fr; gap: 0.25rem; }
-        }
-        @media (max-width: 420px) {
-            .signal dl { grid-template-columns: 1fr; }
-            .btn { white-space: normal; }
+        @media (max-width: 520px) {
+            .signal__metrics { grid-template-columns: 1fr; }
+            .signal__metrics > div {
+                border-inline-end: 0;
+                border-bottom: 1px solid var(--border);
+            }
+            .signal__metrics > div:last-child { border-bottom: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
-            .btn { transition: none; }
-            .signal[aria-busy="true"] { opacity: 1; }
-            nav { backdrop-filter: none; }
-        }
-        @media (prefers-contrast: more) {
-            :root { --hair: #8ba3c4; --muted: #c9d7ea; }
-            .num-up, .num-down, .num-hold { text-decoration: underline; text-underline-offset: 0.15em; }
+            .signal__live::before,
+            .fg-gauge__fill,
+            .exit-thermo__fill { animation: none; transition: none; }
         }
     </style>
 </head>
@@ -453,168 +965,318 @@
     <nav aria-label="Principal">
         <div class="wrap">
             <a href="/" class="brand">CryptoDash<span>Pro</span></a>
-            <div class="nav-links">
-                <a href="#recursos">Recursos</a>
-                <a href="#vantagens">Cadastro</a>
-                <a href="#planos">Planos</a>
+            <div class="nav-cluster">
+                <div class="nav-links">
+                    <a href="#plano">O plano</a>
+                    <a href="#prova">Prova</a>
+                    <a href="#chat">Chat</a>
+                    <a href="#como-funciona">Como funciona</a>
+                    <a href="#conta">Conta</a>
+                </div>
                 <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
             </div>
         </div>
     </nav>
 
     <header class="hero-shell">
+        <img class="hero-shell__photo" src="/assets/hero-desk.jpg" width="1600" height="1008" alt="">
         <div class="wrap">
             <section class="hero">
-                <div>
-                    <h1>Sinais de compra e venda de uma IA treinada no mercado</h1>
-                    <p class="lede">Deep learning sobre indicadores, sentimento e chat no mesmo painel — com alvo e stop no seu perfil. Cadastre-se para liberar mais ativos e o advisor completo. A decisão continua sua.</p>
+                <div class="hero__copy">
+                    <p class="label-mono hero__kicker">Signal desk · modelo CNN ao vivo</p>
+                    <h1 class="hero__brand">CryptoDash<br><span>Pro</span></h1>
+                    <p class="hero__claim">Plano de compra, venda ou manter — com entrada, alvo e stop.</p>
+                    <p class="lede">O plano vem do modelo CNN, ao vivo no card. Sentimento, Fear &amp; Greed, Market Exit e chat entram depois, como contexto.</p>
+                    <ul class="hero__facts" aria-label="O que você vê">
+                        <li>Entrada, alvo e stop no seu perfil de risco</li>
+                        <li>Últimos planos do modelo no card ao lado</li>
+                        <li>Aconselha — nenhuma ordem sai daqui</li>
+                    </ul>
                     <div class="btn-row">
                         <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
-                        <a class="btn btn--ghost" href="#recursos">Ver recursos</a>
+                        <a class="btn btn--ghost" href="#prova">Ver prova</a>
                     </div>
+                    <p class="hero__hint">Sem cadastro, só Bitcoin. <a href="#prova">Sentimento e chat</a> · <a href="#conta">o que a conta libera</a>.</p>
                 </div>
-                <article class="signal" id="signal-card" aria-labelledby="signal-heading" aria-busy="true">
-                    <p class="signal__meta">Último sinal · Bitcoin · perfil moderado</p>
-                    <div class="signal__head">
-                        <h2 id="signal-heading">Bitcoin</h2>
-                        <p class="signal__px">
-                            <span id="hero-btc-price">—</span>
-                            <span id="hero-btc-change">—</span>
-                        </p>
+
+                <div id="plano">
+                <article class="signal panel" id="signal-card" aria-labelledby="signal-heading" aria-busy="true" data-side="">
+                    <div class="signal__bar">
+                        <span class="signal__live" id="hero-live-label">Ao vivo</span>
+                        <h2 id="signal-heading">BTCUSDT</h2>
+                        <span class="signal__tf">1h</span>
+                        <p class="signal__meta">Perfil moderado</p>
                     </div>
-                    <dl>
+                    <div class="signal__quote">
                         <div>
-                            <dt>Sinal da IA</dt>
-                            <dd class="signal__reco" id="hero-recommendation">—</dd>
+                            <p class="signal__px" id="hero-btc-price">—</p>
+                            <p class="signal__chg" id="hero-btc-change">—</p>
                         </div>
+                        <div class="signal__verdict">
+                            <p class="label-mono signal__verdict-label">Plano</p>
+                            <p class="signal__reco" id="hero-recommendation">—</p>
+                            <p class="signal__conf" id="hero-confidence"></p>
+                            <p class="signal__when" id="hero-when">—</p>
+                        </div>
+                    </div>
+                    <div class="signal__chart-wrap">
+                        <div class="signal__chart" id="hero-chart" role="img" aria-label="Gráfico de velas Bitcoin, intervalo 1 hora"></div>
+                        <div class="signal__chart-fallback" id="hero-chart-fallback">
+                            Gráfico indisponível.
+                            <a href="/dashboard/">Abrir painel</a>
+                        </div>
+                    </div>
+                    <dl class="signal__metrics">
                         <div>
-                            <dt>Quando</dt>
-                            <dd id="hero-when">—</dd>
+                            <dt>Entrada</dt>
+                            <dd class="is-entry" id="hero-entry">—</dd>
+                            <p class="signal__metric-note" id="hero-entry-note">preço do sinal</p>
                         </div>
                         <div>
                             <dt>Alvo</dt>
-                            <dd id="hero-target">—</dd>
+                            <dd class="is-target" id="hero-target">—</dd>
+                            <p class="signal__metric-note" id="hero-target-note">perfil moderado</p>
                         </div>
                         <div>
                             <dt>Stop</dt>
-                            <dd id="hero-stop">—</dd>
+                            <dd class="is-stop" id="hero-stop">—</dd>
+                            <p class="signal__metric-note" id="hero-stop-note">perfil moderado</p>
                         </div>
                     </dl>
                     <div class="signal__note" id="hero-recommendation-details" role="status" aria-live="polite">
-                        Buscando o último sinal…
-                        <noscript>O sinal ao vivo precisa de JavaScript. <a href="/dashboard/">Abra o dashboard</a> — o mercado continua visível lá.</noscript>
+                        Carregando o plano ao vivo…
+                        <noscript>O plano ao vivo precisa de JavaScript. <a href="/dashboard/">Abrir painel</a> para ver o mercado mesmo assim.</noscript>
+                    </div>
+                    <div class="signal__history" id="historico" aria-labelledby="signal-history-heading">
+                        <div class="signal__history-head">
+                            <h3 class="signal__history-title" id="signal-history-heading">Últimos planos · Bitcoin</h3>
+                            <span class="records__live" id="records-live">ao vivo</span>
+                        </div>
+                        <div class="signal__history-wrap">
+                            <table class="signal__history-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Quando</th>
+                                        <th scope="col">Lado</th>
+                                        <th scope="col">Conf.</th>
+                                        <th scope="col">Preço</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="records-body">
+                                    <tr>
+                                        <td colspan="4"><p class="records__loading">Carregando…</p></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="signal__history-foot" id="records-foot" role="status" aria-live="polite">
+                            Últimos 3 planos no card · não é P&amp;L de trade fechado.
+                        </p>
                     </div>
                 </article>
+                </div>
             </section>
         </div>
     </header>
 
     <main id="conteudo">
-        <section class="band" id="recursos">
+        <section class="band prova-band" id="prova" aria-labelledby="prova-heading">
             <div class="wrap">
-                <h2 class="sec">O que o produto entrega</h2>
-                <p class="sec-lede">O sinal treinado é o centro. Sentimento e chat existem para você entendê-lo — não para substituí-lo. Nenhuma ordem sai daqui.</p>
-                <div class="features">
-                    <article class="feature">
-                        <span class="feature__mark" aria-hidden="true"></span>
-                        <h3>Sinal de compra e venda</h3>
-                        <p>IA de deep learning treinada em diversos indicadores. Classifica cada ativo em compra, venda ou manter, com alvo e stop no perfil conservador, moderado ou agressivo.</p>
+                <p class="label-mono">Prova</p>
+                <h2 class="sec" id="prova-heading">O contexto que orbita o plano — e nunca ocupa o lugar dele.</h2>
+
+                <div class="proof-grid">
+                    <article class="showcase" id="sentiment-showcase" aria-labelledby="sentiment-heading">
+                        <header class="showcase__head">
+                            <h3 id="sentiment-heading">Análise de sentimento · Bitcoin</h3>
+                            <p>Leitura das manchetes recentes. Contexto para o plano — não é sinal de entrada ou saída.</p>
+                        </header>
+                        <div class="sent-split">
+                            <div id="sentiment-card" aria-live="polite">
+                                <p class="sent-badge is-loading" id="sent-badge" data-tone="middle" role="status">Carregando…</p>
+                                <p class="sent-conf" id="sent-conf"></p>
+                                <ul class="sent-drivers" id="sent-drivers" hidden></ul>
+                                <p class="sent-note" id="sent-note">O sentimento indica clima de mercado; o plano CNN continua sendo a referência de entrada, alvo e stop.</p>
+                            </div>
+                            <aside id="fg-card" aria-labelledby="fg-heading">
+                                <h4 id="fg-heading" class="visually-hidden">Fear &amp; Greed</h4>
+                                <div class="fg-gauge">
+                                    <p class="fg-gauge__value" id="fg-value">—</p>
+                                    <p class="fg-gauge__label" id="fg-label">Carregando…</p>
+                                    <div class="fg-gauge__bar" id="fg-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Índice Fear and Greed">
+                                        <span class="fg-gauge__fill" id="fg-fill"></span>
+                                    </div>
+                                    <p class="fg-gauge__hint">Índice Fear &amp; Greed</p>
+                                </div>
+                            </aside>
+                        </div>
                     </article>
-                    <article class="feature">
-                        <span class="feature__mark" aria-hidden="true"></span>
-                        <h3>Sentimento de mercado</h3>
-                        <p>Fear &amp; Greed e o clima das notícias ao lado do gráfico — contexto para o sinal, não um substituto.</p>
-                    </article>
-                    <article class="feature">
-                        <span class="feature__mark" aria-hidden="true"></span>
-                        <h3>Pergunte à IA</h3>
-                        <p>Tire dúvida em português sobre o sinal que já está no gráfico. Não é um chatbot solto.</p>
+
+                    <article class="showcase" id="exit-showcase" aria-labelledby="exit-heading">
+                        <header class="showcase__head">
+                            <h3 id="exit-heading">Temperatura do BTC · Market Exit</h3>
+                            <p>Oito indicadores on-chain e de mercado somam um score de 0 a 100 — se o clima favorece manter, reduzir ou acumular.</p>
+                        </header>
+                        <div class="exit-score">
+                            <div class="exit-thermo" role="img" aria-label="Exemplo ilustrativo: score 52 de 100, risco moderado">
+                                <span class="exit-thermo__fill" id="exit-thermo-fill"></span>
+                            </div>
+                            <div>
+                                <p class="exit-score__num" id="exit-score-num">52</p>
+                                <p class="exit-score__zone" id="exit-score-zone">Risco moderado</p>
+                                <p class="exit-score__rec" id="exit-score-rec">Cautela — monitore os indicadores de perto.</p>
+                            </div>
+                        </div>
+                        <ul class="exit-chips" id="exit-chips" aria-label="Indicadores Market Exit">
+                            <li>MVRV Z-Score</li>
+                            <li>Pi Cycle Top</li>
+                            <li>BTC Dom</li>
+                            <li>Puell Multiple</li>
+                            <li>NUPL</li>
+                            <li id="exit-fg-chip">Fear &amp; Greed</li>
+                            <li>RSI 22d</li>
+                            <li>Rainbow Chart</li>
+                        </ul>
+                        <p class="showcase__disclaimer">Exemplo ilustrativo — valores fictícios, exceto Fear &amp; Greed quando ao vivo. Score completo no painel.</p>
                     </article>
                 </div>
-                <p class="src">Preços e velas vêm da Binance; visão global, da CoinGecko.</p>
             </div>
         </section>
 
-        <section class="band" id="vantagens">
+        <section class="band" id="chat" aria-labelledby="chat-heading">
             <div class="wrap">
-                <h2 class="sec">Por que criar conta</h2>
-                <p class="sec-lede">Sem cadastro você vê só o Bitcoin. Com conta, o advisor abre o restante do mercado e salva o seu perfil.</p>
+                <div class="chat-split chat-demo" id="chat-demo" aria-live="polite">
+                    <div>
+                        <p class="label-mono">Chat</p>
+                        <h2 class="sec" id="chat-heading">Chat que cruza ferramentas</h2>
+                        <p class="sec-lede">Pergunte cruzando recomendação, sentimento, gráfico e níveis — o assistente consulta o que já está no painel.</p>
+                        <div class="chat-demo__tools" aria-label="Ferramentas citadas">
+                            <span class="chat-demo__chip" data-tool="reco">Recomendação</span>
+                            <span class="chat-demo__chip" data-tool="sentiment">Sentimento</span>
+                            <span class="chat-demo__chip" data-tool="chart">Gráfico</span>
+                        </div>
+                        <div class="chat-cta">
+                            <a class="btn btn--primary" href="/dashboard/">Abrir chat no painel</a>
+                        </div>
+                    </div>
+                    <div class="panel chat-thread">
+                        <div class="chat-thread__head">
+                            <p class="label-mono">Conversa de exemplo</p>
+                        </div>
+                            <div class="chat-thread__body">
+                                <div class="chat-bubble chat-bubble--user" data-step="0" hidden>
+                                    <strong>Você</strong>
+                                    O modelo marcou compra no BTC, mas o sentimento das notícias está negativo. Dá para cruzar com a EMA200 e Fibonacci?
+                                </div>
+                                <div class="chat-typing" id="chat-typing" hidden aria-hidden="true">Assistente digitando…</div>
+                                <div class="chat-bubble chat-bubble--bot" data-step="1" hidden>
+                                    <strong>Assistente</strong>
+                                    Consultei a recomendação CNN, o sentimento das notícias e um snapshot do gráfico. O plano sugere entrada com alvo e stop no perfil moderado; sentimento negativo é contexto — não invalida o sinal sozinho. No painel você compara médias, Fibonacci e o histórico de planos.
+                                </div>
+                            </div>
+                        <p class="chat-thread__foot">Conversa de exemplo — não chama o modelo na landing. Market Exit ainda não está disponível no chat.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="band" id="como-funciona">
+            <div class="wrap">
+                <p class="label-mono">Como funciona</p>
+                <h2 class="sec">Do ruído ao plano</h2>
+                <p class="sec-lede">Um fluxo curto: classificar, dimensionar risco, ler o contexto e decidir. Nenhuma ordem sai daqui.</p>
+                <div class="flow-grid">
+                    <ol class="flow" aria-label="Fluxo do plano">
+                        <li>
+                            <span class="flow__n" aria-hidden="true">1</span>
+                            <div>
+                                <strong>Classificar</strong>
+                                <span>O modelo CNN treinado marca compra, venda ou manter no ativo.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="flow__n" aria-hidden="true">2</span>
+                            <div>
+                                <strong>Montar o plano</strong>
+                                <span>Entrada no preço do sinal; alvo e stop conforme o perfil — conservador, moderado ou agressivo.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="flow__n" aria-hidden="true">3</span>
+                            <div>
+                                <strong>Ler o contexto</strong>
+                                <span>Sentimento, Fear &amp; Greed e Market Exit ao lado do gráfico. Contexto, nunca substituto.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="flow__n" aria-hidden="true">4</span>
+                            <div>
+                                <strong>Perguntar</strong>
+                                <span>Chat em português sobre o plano que está na tela.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="flow__n" aria-hidden="true">5</span>
+                            <div>
+                                <strong>Decidir</strong>
+                                <span>A decisão de investir é sua. O produto aconselha; não executa ordens.</span>
+                            </div>
+                        </li>
+                    </ol>
+                    <aside class="orbit-col" aria-label="O que orbita o plano">
+                        <p class="label-mono">Orbitam o plano</p>
+                        <ul class="orbit">
+                            <li>
+                                <strong>Sentimento</strong>
+                                <span>Leitura das manchetes recentes ao lado do gráfico.</span>
+                            </li>
+                            <li>
+                                <strong>Chat</strong>
+                                <span>Perguntas sobre o sinal e o risco na tela.</span>
+                            </li>
+                            <li>
+                                <strong>Alertas</strong>
+                                <span>Com conta, avise-se nos pares que você acompanha.</span>
+                            </li>
+                        </ul>
+                    </aside>
+                </div>
+                <p class="src">Preços e velas: Binance. Visão global do mercado: CoinGecko.</p>
+            </div>
+        </section>
+
+        <section class="band" id="conta">
+            <div class="wrap">
+                <p class="label-mono">Conta</p>
+                <h2 class="sec">O que a conta libera</h2>
+                <p class="sec-lede">Sem conta, só o Bitcoin fica visível. Com conta, você acessa os demais ativos, salva o perfil, configura alertas e usa o chat no contexto do gráfico.</p>
                 <ul class="perks">
                     <li>
                         <strong>Mais ativos</strong>
-                        <span>Libere criptos além do BTC no dashboard — cada uma com o mesmo fluxo de sinal.</span>
+                        <span>Outras criptos além do BTC, cada uma com o mesmo plano de sinal.</span>
                     </li>
                     <li>
-                        <strong>Alvo e stop</strong>
-                        <span>Veja proteção e objetivo por perfil de risco, junto da recomendação.</span>
+                        <strong>Alvo e stop por perfil</strong>
+                        <span>Preço-alvo e stop de perda conforme o perfil: conservador, moderado ou agressivo.</span>
                     </li>
                     <li>
-                        <strong>Perfil salvo</strong>
-                        <span>Conservador, moderado ou agressivo acompanha você nas próximas visitas.</span>
+                        <strong>Alertas</strong>
+                        <span>Avisos nos seus pares favoritos quando o preço ou a condição que você definiu dispara.</span>
                     </li>
                     <li>
                         <strong>Chat no contexto</strong>
-                        <span>Pergunte à IA sobre o ativo e o sinal que está na tela — não um bot genérico.</span>
+                        <span>Perguntas sobre o ativo e o plano que estão na tela.</span>
                     </li>
                 </ul>
-                <div class="btn-row" style="margin-top: 1.5rem;">
-                    <a class="btn btn--primary" href="/dashboard/">Criar conta no dashboard</a>
-                </div>
-            </div>
-        </section>
-
-        <section class="band" id="planos">
-            <div class="wrap">
-                <h2 class="sec">Planos</h2>
-                <p class="sec-lede">A assinatura ainda não está à venda. Estes são os níveis que estamos preparando — crie a conta agora e acompanhe o lançamento.</p>
-                <div class="plans">
-                    <article class="plan">
-                        <h3>Iniciante</h3>
-                        <p class="plan__price">Valores em breve</p>
-                        <p class="plan__blurb">Para acompanhar o sinal com disciplina e pouco ruído.</p>
-                        <ul>
-                            <li>Dashboard e sinal no perfil conservador</li>
-                            <li>Bitcoin e ativos liberados pela conta</li>
-                            <li>Histórico do sinal no gráfico</li>
-                        </ul>
-                        <a class="btn" href="/dashboard/">Criar conta</a>
-                    </article>
-                    <article class="plan plan--featured">
-                        <span class="plan__badge">Recomendado</span>
-                        <h3>Pro</h3>
-                        <p class="plan__price">Valores em breve</p>
-                        <p class="plan__blurb">O advisor completo: sinal, sentimento e conversa.</p>
-                        <ul>
-                            <li>Todos os perfis (conservador → agressivo)</li>
-                            <li>Sentimento e notícias ao lado do gráfico</li>
-                            <li>Chat com a IA no contexto do ativo</li>
-                            <li>Prioridade no acesso a novas features</li>
-                        </ul>
+                <div class="access" id="acesso">
+                    <div>
+                        <h3>Sem cobrança agora</h3>
+                        <p>A assinatura ainda não está à venda. Criar conta libera o produto de hoje; a cobrança só começa quando publicarmos planos.</p>
+                    </div>
+                    <div class="access__aside">
                         <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
-                    </article>
-                    <article class="plan">
-                        <h3>Institucional</h3>
-                        <p class="plan__price">Sob consulta</p>
-                        <p class="plan__blurb">Para times que precisam de API e acompanhamento.</p>
-                        <ul>
-                            <li>Acesso via API aos sinais</li>
-                            <li>Suporte dedicado</li>
-                            <li>Conversa direta sobre o rollout</li>
-                        </ul>
-                        <a class="btn" href="mailto:contato@aiinvestadvisor.com?subject=CryptoDash%20Pro%20Institucional">Falar conosco</a>
-                    </article>
-                </div>
-                <p class="plan-note">Nenhum plano cobra hoje. Criar conta libera o produto atual; a cobrança só começa quando a assinatura estiver publicada.</p>
-            </div>
-        </section>
-
-        <section class="cta-band">
-            <div class="wrap band" id="acesso">
-                <h2 class="sec">Comece pelo dashboard</h2>
-                <p class="sec-lede">Abra o painel, crie a conta e veja o sinal ao vivo. Depois, quando os planos saírem, você já estará dentro.</p>
-                <div class="btn-row">
-                    <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
-                    <a class="btn btn--ghost" href="/dashboard/">Abrir Dashboard</a>
+                        <p class="access__inst">Precisa de API para o time? <a href="mailto:contato@aiinvestadvisor.com?subject=CryptoDash%20Pro%20Institucional">Fale conosco</a></p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -622,23 +1284,40 @@
 
     <footer>
         <div class="wrap">
-            <p>© 2026 CryptoDash Pro. Conteúdo educacional, não é recomendação financeira. A decisão de investir é sempre sua.</p>
-            <a href="/dashboard/">Dashboard</a>
+            <p>© 2026 CryptoDash Pro. Advisor de cripto: não é exchange, não é bot de execução e não envia ordens. Conteúdo educacional, não é recomendação financeira. A decisão de investir é sempre sua.</p>
+            <a href="/dashboard/">Já tenho conta</a>
         </div>
     </footer>
-
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const card = document.getElementById('signal-card');
+            const chartEl = document.getElementById('hero-chart');
             const priceEl = document.getElementById('hero-btc-price');
             const changeEl = document.getElementById('hero-btc-change');
             const recoEl = document.getElementById('hero-recommendation');
             const recoDetailsEl = document.getElementById('hero-recommendation-details');
             const whenEl = document.getElementById('hero-when');
+            const entryEl = document.getElementById('hero-entry');
             const targetEl = document.getElementById('hero-target');
             const stopEl = document.getElementById('hero-stop');
+            const confEl = document.getElementById('hero-confidence');
+            const entryNoteEl = document.getElementById('hero-entry-note');
+            const targetNoteEl = document.getElementById('hero-target-note');
+            const stopNoteEl = document.getElementById('hero-stop-note');
+            const recordsCard = document.getElementById('historico');
+            const recordsBody = document.getElementById('records-body');
+            const recordsFoot = document.getElementById('records-foot');
             let loadGen = 0;
+            let recordsGen = 0;
             let currentRun = null;
+            let heroChart = null;
+            let candleSeries = null;
+            let targetLine = null;
+            let stopLine = null;
+            let chartReady = false;
+            let candleTimes = [];
+            let heroEntryPrice = null;
 
             function recoBase() {
                 const host = window.location.hostname;
@@ -674,12 +1353,26 @@
             }
 
             function setRecoStyle(reco) {
-                if (!recoEl) return;
-                recoEl.className = 'signal__reco';
+                if (!card) return;
                 const normalized = String(reco || '').toLowerCase();
-                if (normalized.includes('buy') || normalized.includes('compra')) recoEl.classList.add('num-up');
-                else if (normalized.includes('sell') || normalized.includes('venda')) recoEl.classList.add('num-down');
-                else if (normalized.includes('hold') || normalized.includes('manter')) recoEl.classList.add('num-hold');
+                let side = '';
+                if (normalized.includes('buy') || normalized.includes('compra')) side = 'buy';
+                else if (normalized.includes('sell') || normalized.includes('venda')) side = 'sell';
+                else if (normalized.includes('hold') || normalized.includes('manter')) side = 'hold';
+                card.setAttribute('data-side', side);
+            }
+
+            function setLevelNote(el, fromPrice, toPrice, fallback) {
+                if (!el) return;
+                const a = Number(fromPrice);
+                const b = Number(toPrice);
+                if (!isFinite(a) || !isFinite(b) || a === 0) {
+                    el.textContent = fallback;
+                    return;
+                }
+                const pct = ((b - a) / a) * 100;
+                const sign = pct > 0 ? '+' : '−';
+                el.textContent = sign + Math.abs(pct).toFixed(2).replace('.', ',') + '% · perfil moderado';
             }
 
             function fmtMoney(v) {
@@ -697,10 +1390,10 @@
                 if (!raw.trim()) return '—';
                 const iso = raw.includes('T') ? raw : raw.replace(' ', 'T');
                 const d = new Date(iso);
-                if (!isNaN(d.getTime())) {
-                    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(d);
+                if (!isFinite(d.getTime())) {
+                    return raw.length > 32 ? raw.slice(0, 32) + '…' : raw;
                 }
-                return raw.length > 32 ? raw.slice(0, 32) + '…' : raw;
+                return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(d);
             }
 
             function setNote(nodes) {
@@ -714,7 +1407,7 @@
             function dashLink() {
                 const a = document.createElement('a');
                 a.href = '/dashboard/';
-                a.textContent = 'Abra o dashboard';
+                a.textContent = 'Abrir painel';
                 return a;
             }
 
@@ -729,10 +1422,244 @@
 
             function failReason(err) {
                 if (!navigator.onLine) return 'Sem conexão. ';
-                if (err && err.name === 'AbortError') return 'A busca demorou demais. ';
-                if (err && err.status === 404) return 'Ainda não há sinal publicado para Bitcoin. ';
+                if (err && err.name === 'AbortError') return 'A busca do plano demorou demais. ';
+                if (err && err.status === 404) return 'Ainda não há plano publicado para Bitcoin. ';
                 if (err && err.status >= 500) return 'O serviço de sinais falhou. ';
-                return 'Não foi possível carregar o sinal agora. ';
+                return 'Não foi possível carregar o plano agora. ';
+            }
+
+            function clearPriceLines() {
+                if (!candleSeries) return;
+                if (targetLine) {
+                    try { candleSeries.removePriceLine(targetLine); } catch (_) {}
+                    targetLine = null;
+                }
+                if (stopLine) {
+                    try { candleSeries.removePriceLine(stopLine); } catch (_) {}
+                    stopLine = null;
+                }
+            }
+
+            function clearSignalMarker() {
+                if (!candleSeries || typeof candleSeries.setMarkers !== 'function') return;
+                candleSeries.setMarkers([]);
+            }
+
+            function parseRecoUnix(date, time) {
+                const d = String(date || '').trim();
+                const t = String(time || '').trim();
+                if (!d) return null;
+                const candidates = [];
+                if (d.includes('T')) {
+                    candidates.push(d);
+                    if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(d)) candidates.push(d + 'Z');
+                } else if (t) {
+                    candidates.push(d + 'T' + t + 'Z');
+                    candidates.push(d + 'T' + t);
+                    candidates.push(d + ' ' + t);
+                } else {
+                    candidates.push(d);
+                }
+                for (let i = 0; i < candidates.length; i++) {
+                    const ms = Date.parse(candidates[i]);
+                    if (isFinite(ms)) return Math.floor(ms / 1000);
+                }
+                return null;
+            }
+
+            function nearestCandleTime(unix) {
+                if (!candleTimes.length || !isFinite(unix)) return null;
+                let best = null;
+                let minDiff = Infinity;
+                // 1h candles: allow snap within ~40 minutes of hour open, else nearest in window
+                for (let i = 0; i < candleTimes.length; i++) {
+                    const diff = Math.abs(candleTimes[i] - unix);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        best = candleTimes[i];
+                    }
+                }
+                // keep marker only if signal falls inside chart span ± 1h
+                const first = candleTimes[0];
+                const last = candleTimes[candleTimes.length - 1];
+                if (unix < first - 3600 || unix > last + 3600) return null;
+                return best;
+            }
+
+            function setSignalMarker(reco, date, time) {
+                if (!candleSeries || typeof candleSeries.setMarkers !== 'function') return;
+                const unix = parseRecoUnix(date, time);
+                const candleTime = nearestCandleTime(unix);
+                if (candleTime == null) {
+                    clearSignalMarker();
+                    return;
+                }
+                const normalized = String(reco || '').toLowerCase();
+                let marker = null;
+                if (normalized.includes('buy') || normalized.includes('compra')) {
+                    marker = {
+                        time: candleTime,
+                        position: 'belowBar',
+                        color: '#3fb950',
+                        shape: 'arrowUp',
+                        text: 'Compra',
+                        size: 2
+                    };
+                } else if (normalized.includes('sell') || normalized.includes('venda')) {
+                    marker = {
+                        time: candleTime,
+                        position: 'aboveBar',
+                        color: '#f85149',
+                        shape: 'arrowDown',
+                        text: 'Venda',
+                        size: 2
+                    };
+                } else if (normalized.includes('hold') || normalized.includes('manter')) {
+                    marker = {
+                        time: candleTime,
+                        position: 'aboveBar',
+                        color: '#d29922',
+                        shape: 'circle',
+                        text: 'Manter',
+                        size: 1.5
+                    };
+                }
+                candleSeries.setMarkers(marker ? [marker] : []);
+                if (marker && heroChart) {
+                    const idx = candleTimes.indexOf(candleTime);
+                    if (idx >= 0) {
+                        const from = Math.max(0, idx - 40);
+                        const to = Math.min(candleTimes.length - 1, idx + 16);
+                        try {
+                            heroChart.timeScale().setVisibleLogicalRange({ from: from, to: to });
+                        } catch (_) {
+                            try { heroChart.timeScale().fitContent(); } catch (__) {}
+                        }
+                    }
+                }
+            }
+
+            function setPriceLines(target, stop) {
+                if (!candleSeries || typeof candleSeries.createPriceLine !== 'function') return;
+                clearPriceLines();
+                const t = Number(target);
+                const s = Number(stop);
+                if (isFinite(t)) {
+                    targetLine = candleSeries.createPriceLine({
+                        price: t,
+                        color: '#3fb950',
+                        lineWidth: 1,
+                        lineStyle: 2,
+                        axisLabelVisible: true,
+                        title: 'Alvo'
+                    });
+                }
+                if (isFinite(s)) {
+                    stopLine = candleSeries.createPriceLine({
+                        price: s,
+                        color: '#f85149',
+                        lineWidth: 1,
+                        lineStyle: 2,
+                        axisLabelVisible: true,
+                        title: 'Stop'
+                    });
+                }
+            }
+
+            function initHeroChart() {
+                if (!chartEl || typeof LightweightCharts === 'undefined') {
+                    if (card) card.classList.add('is-chart-error');
+                    return false;
+                }
+                if (heroChart) return true;
+                heroChart = LightweightCharts.createChart(chartEl, {
+                    layout: {
+                        background: { type: 'solid', color: 'transparent' },
+                        textColor: '#9aa0ab',
+                        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+                        fontSize: 11
+                    },
+                    grid: {
+                        vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+                        horzLines: { color: 'rgba(255, 255, 255, 0.04)' }
+                    },
+                    rightPriceScale: {
+                        borderVisible: false,
+                        scaleMargins: { top: 0.12, bottom: 0.12 }
+                    },
+                    timeScale: {
+                        borderVisible: false,
+                        timeVisible: true,
+                        secondsVisible: false
+                    },
+                    crosshair: {
+                        vertLine: { color: 'rgba(201, 162, 39, 0.35)', width: 1, style: 2, labelBackgroundColor: '#36373d' },
+                        horzLine: { color: 'rgba(201, 162, 39, 0.35)', width: 1, style: 2, labelBackgroundColor: '#36373d' }
+                    },
+                    handleScroll: false,
+                    handleScale: false,
+                    width: chartEl.clientWidth || 480,
+                    height: chartEl.clientHeight || 264
+                });
+                candleSeries = heroChart.addCandlestickSeries({
+                    upColor: '#3fb950',
+                    downColor: '#f85149',
+                    borderVisible: false,
+                    wickUpColor: '#3fb950',
+                    wickDownColor: '#f85149'
+                });
+                if (typeof ResizeObserver !== 'undefined') {
+                    const ro = new ResizeObserver(function() {
+                        if (!heroChart || !chartEl) return;
+                        heroChart.applyOptions({
+                            width: chartEl.clientWidth,
+                            height: chartEl.clientHeight || 264
+                        });
+                    });
+                    ro.observe(chartEl);
+                }
+                return true;
+            }
+
+            async function loadHeroChart(signal) {
+                if (!initHeroChart()) return;
+                const bases = [
+                    'https://data-api.binance.vision/api/v3',
+                    'https://api.binance.com/api/v3'
+                ];
+                let rows = null;
+                let lastErr = null;
+                for (let i = 0; i < bases.length; i++) {
+                    try {
+                        rows = await fetchJson(
+                            bases[i] + '/klines?symbol=BTCUSDT&interval=1h&limit=168',
+                            10000,
+                            signal
+                        );
+                        break;
+                    } catch (err) {
+                        lastErr = err;
+                    }
+                }
+                if (!rows || !Array.isArray(rows) || !rows.length) {
+                    if (card) card.classList.add('is-chart-error');
+                    throw lastErr || new Error('chart');
+                }
+                if (card) card.classList.remove('is-chart-error');
+                const candles = rows.map(function(k) {
+                    return {
+                        time: Math.floor(Number(k[0]) / 1000),
+                        open: Number(k[1]),
+                        high: Number(k[2]),
+                        low: Number(k[3]),
+                        close: Number(k[4])
+                    };
+                });
+                candleSeries.setData(candles);
+                candleTimes = candles.map(function(c) { return c.time; });
+                clearSignalMarker();
+                heroChart.timeScale().fitContent();
+                chartReady = true;
             }
 
             async function loadHeroData() {
@@ -744,11 +1671,26 @@
                 if (card) {
                     card.setAttribute('aria-busy', 'true');
                     card.classList.remove('is-error');
+                    card.setAttribute('data-side', '');
                 }
-                setNote([textNode('Buscando o último sinal…')]);
+                if (recoEl) recoEl.textContent = '—';
+                if (whenEl) whenEl.textContent = '—';
+                if (entryEl) entryEl.textContent = '—';
+                if (targetEl) targetEl.textContent = '—';
+                if (stopEl) stopEl.textContent = '—';
+                clearPriceLines();
+                clearSignalMarker();
+                setNote([textNode('Carregando o plano ao vivo…')]);
 
                 try {
-                    const ticker = await fetchJson('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', 8000, run.signal);
+                    await loadHeroChart(run.signal);
+                    if (gen !== loadGen) return;
+                } catch (_) {
+                    if (gen !== loadGen) return;
+                }
+
+                try {
+                    const ticker = await fetchJson('https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT', 8000, run.signal);
                     if (gen !== loadGen) return;
                     const price = Number(ticker.lastPrice);
                     const change = Number(ticker.priceChangePercent);
@@ -760,23 +1702,39 @@
                             changeEl.removeAttribute('aria-label');
                         } else {
                             const sign = change > 0 ? '+' : '';
-                            changeEl.textContent = sign + change.toFixed(2).replace('.', ',') + '%';
+                            changeEl.textContent = sign + change.toFixed(2).replace('.', ',') + '% · 24h';
                             changeEl.className = change >= 0 ? 'num-up' : 'num-down';
-                            changeEl.setAttribute('aria-label', 'Variação em 24 horas: ' + changeEl.textContent);
+                            changeEl.setAttribute('aria-label', 'Variação em 24 horas: ' + sign + change.toFixed(2).replace('.', ',') + '%');
                         }
                     }
                 } catch (_) {
                     if (gen !== loadGen) return;
-                    if (priceEl) priceEl.textContent = '—';
-                    if (changeEl) {
-                        changeEl.textContent = '—';
-                        changeEl.className = '';
-                        changeEl.removeAttribute('aria-label');
+                    try {
+                        const ticker = await fetchJson('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', 8000, run.signal);
+                        if (gen !== loadGen) return;
+                        const price = Number(ticker.lastPrice);
+                        const change = Number(ticker.priceChangePercent);
+                        if (priceEl) priceEl.textContent = isFinite(price) ? fmtMoney(price) : '—';
+                        if (changeEl && isFinite(change)) {
+                            const sign = change > 0 ? '+' : '';
+                            changeEl.textContent = sign + change.toFixed(2).replace('.', ',') + '% · 24h';
+                            changeEl.className = change >= 0 ? 'num-up' : 'num-down';
+                        }
+                    } catch (__) {
+                        if (gen !== loadGen) return;
+                        if (priceEl) priceEl.textContent = '—';
+                        if (changeEl) {
+                            changeEl.textContent = '—';
+                            changeEl.className = '';
+                            changeEl.removeAttribute('aria-label');
+                        }
                     }
                 }
 
                 const base = recoBase().replace(/\/$/, '');
                 let recoOk = false;
+                let targetVal = null;
+                let stopVal = null;
 
                 try {
                     const data = await fetchJson(base + '/last_recommendation?model_name=CNN&crypto=BTC', 8000, run.signal);
@@ -785,18 +1743,38 @@
                     const reco = data.recommendation ?? data.Recommendation ?? '';
                     if (recoEl) recoEl.textContent = labelReco(reco);
                     setRecoStyle(reco);
+                    if (confEl) {
+                        const conf = confLabel(data.percentage ?? data.Percentage ?? data.confidence);
+                        confEl.textContent = conf !== '—' ? 'confiança ' + conf : '';
+                    }
                     if (whenEl) whenEl.textContent = fmtWhen(data.Date ?? data.date, data.Time ?? data.time);
+                    if (chartReady) {
+                        setSignalMarker(reco, data.Date ?? data.date, data.Time ?? data.time);
+                    }
                     const signalPrice = data.Price ?? data.price;
-                    setNote([textNode(signalPrice != null ? 'Preço no sinal: ' + fmtMoney(signalPrice) : 'Sinal carregado.')]);
+                    if (entryEl) entryEl.textContent = signalPrice != null ? fmtMoney(signalPrice) : '—';
+                    if (entryNoteEl) entryNoteEl.textContent = signalPrice != null ? 'preço do sinal' : 'perfil moderado';
+                    heroEntryPrice = signalPrice;
+                    setNote([textNode(
+                        signalPrice != null
+                            ? 'Plano ao preço de entrada acima · perfil moderado.'
+                            : 'Plano atualizado · perfil moderado.'
+                    )]);
                     recoOk = true;
                 } catch (err) {
                     if (gen !== loadGen) return;
-                    if (recoEl) {
-                        recoEl.textContent = 'Indisponível';
-                        recoEl.className = 'signal__reco';
-                    }
+                    if (recoEl) recoEl.textContent = 'Sem plano';
+                    if (confEl) confEl.textContent = '';
                     if (whenEl) whenEl.textContent = '—';
-                    if (card) card.classList.add('is-error');
+                    if (entryEl) entryEl.textContent = '—';
+                    if (targetEl) targetEl.textContent = '—';
+                    if (stopEl) stopEl.textContent = '—';
+                    heroEntryPrice = null;
+                    if (card) {
+                        card.classList.add('is-error');
+                        card.setAttribute('data-side', '');
+                    }
+                    clearSignalMarker();
                     const wrap = document.createElement('div');
                     wrap.appendChild(textNode(failReason(err)));
                     wrap.appendChild(dashLink());
@@ -810,13 +1788,18 @@
                     const ts = await fetchJson(base + '/last_target_stop?model_name=CNN&crypto=BTC&profile=moderate', 8000, run.signal);
                     if (gen !== loadGen) return;
                     if (ts && !ts.error) {
-                        if (targetEl) targetEl.textContent = fmtMoney(ts.target ?? ts.Target);
-                        if (stopEl) stopEl.textContent = fmtMoney(ts.stop_loss ?? ts.StopLoss ?? ts.stop);
+                        targetVal = ts.target ?? ts.Target;
+                        stopVal = ts.stop_loss ?? ts.StopLoss ?? ts.stop;
+                        if (targetEl) targetEl.textContent = fmtMoney(targetVal);
+                        if (stopEl) stopEl.textContent = fmtMoney(stopVal);
+                        setLevelNote(targetNoteEl, heroEntryPrice, targetVal, 'perfil moderado');
+                        setLevelNote(stopNoteEl, heroEntryPrice, stopVal, 'perfil moderado');
+                        if (chartReady) setPriceLines(targetVal, stopVal);
                     }
                 } catch (_) {
                     if (gen !== loadGen) return;
-                    if (recoOk && recoDetailsEl && recoDetailsEl.textContent.indexOf('Preço no sinal') === 0) {
-                        recoDetailsEl.appendChild(textNode(' Alvo e stop não vieram nesta resposta.'));
+                    if (recoOk && recoDetailsEl && recoDetailsEl.textContent.indexOf('Plano') === 0) {
+                        recoDetailsEl.appendChild(textNode(' Alvo e stop não estão disponíveis neste plano.'));
                     }
                 }
 
@@ -824,8 +1807,442 @@
                 if (card) card.setAttribute('aria-busy', 'false');
             }
 
+            function sideMeta(reco) {
+                const normalized = String(reco || '').toLowerCase();
+                if (normalized.includes('buy') || normalized.includes('compra')) {
+                    return { side: 'buy', label: 'Compra', status: 'Compra' };
+                }
+                if (normalized.includes('sell') || normalized.includes('venda')) {
+                    return { side: 'sell', label: 'Venda', status: 'Venda' };
+                }
+                if (normalized.includes('hold') || normalized.includes('manter')) {
+                    return { side: 'hold', label: 'Manter', status: 'Manter' };
+                }
+                return { side: '', label: reco ? String(reco) : '—', status: '—' };
+            }
+
+            function confLabel(pct) {
+                const n = Number(pct);
+                if (!isFinite(n)) return '—';
+                const value = n <= 1 ? n * 100 : n;
+                return Math.round(value) + '%';
+            }
+
+            function history24hLine(allRows) {
+                if (!allRows || !allRows.length) return '';
+                const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+                const recent = allRows.filter(function(row) {
+                    const unix = parseRecoUnix(row.Date, row.Time);
+                    return unix && unix * 1000 >= dayAgo;
+                });
+                if (recent.length === 0) return 'Nenhum plano nas últimas 24h';
+                if (recent.length === 1) return '1 plano nas últimas 24h';
+                return recent.length + ' planos nas últimas 24h';
+            }
+
+            function renderRecords(rows, updatedAt, allRows) {
+                if (!recordsBody) return;
+                recordsBody.replaceChildren();
+                if (!rows.length) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 4;
+                    const p = document.createElement('p');
+                    p.className = 'records__empty';
+                    p.textContent = 'Ainda não há planos publicados para Bitcoin.';
+                    td.appendChild(p);
+                    tr.appendChild(td);
+                    recordsBody.appendChild(tr);
+                } else {
+                    rows.forEach(function(row) {
+                        const meta = sideMeta(row.recommendation);
+                        const tr = document.createElement('tr');
+
+                        const tdWhen = document.createElement('td');
+                        const whenWrap = document.createElement('div');
+                        whenWrap.className = 'records__pair';
+                        const strong = document.createElement('strong');
+                        strong.textContent = fmtWhen(row.Date, row.Time) || '—';
+                        const sub = document.createElement('span');
+                        sub.textContent = 'BTCUSDT · 1h';
+                        whenWrap.appendChild(strong);
+                        whenWrap.appendChild(sub);
+                        tdWhen.appendChild(whenWrap);
+
+                        const tdSide = document.createElement('td');
+                        const sideEl = document.createElement('span');
+                        sideEl.className = 'records__side';
+                        if (meta.side) sideEl.setAttribute('data-side', meta.side);
+                        sideEl.textContent = meta.label;
+                        tdSide.appendChild(sideEl);
+
+                        const tdStatus = document.createElement('td');
+                        const pill = document.createElement('span');
+                        pill.className = 'records__pill';
+                        if (meta.side) pill.setAttribute('data-tone', meta.side);
+                        const conf = confLabel(row.percentage);
+                        pill.textContent = conf !== '—' ? conf : meta.status;
+                        pill.title = 'Confiança do modelo';
+                        tdStatus.appendChild(pill);
+
+                        const tdPrice = document.createElement('td');
+                        const price = document.createElement('span');
+                        price.className = 'records__result';
+                        price.textContent = fmtMoney(row.Price);
+                        tdPrice.appendChild(price);
+
+                        tr.appendChild(tdWhen);
+                        tr.appendChild(tdSide);
+                        tr.appendChild(tdStatus);
+                        tr.appendChild(tdPrice);
+                        recordsBody.appendChild(tr);
+                    });
+                }
+                if (recordsFoot) {
+                    const when = new Intl.DateTimeFormat('pt-BR', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }).format(updatedAt || new Date());
+                    const summary = history24hLine(allRows || rows);
+                    recordsFoot.textContent =
+                        'Atualizado: ' + when +
+                        ' · A cada 10 min' +
+                        (summary ? ' · ' + summary : '') +
+                        ' · Últimos 3 no card · não é P&L de trade.';
+                }
+            }
+
+            async function loadRecords() {
+                const gen = ++recordsGen;
+                if (recordsCard) recordsCard.classList.remove('is-error');
+                if (recordsBody && !recordsBody.querySelector('.records__side')) {
+                    recordsBody.innerHTML =
+                        '<tr><td colspan="4"><p class="records__loading">Carregando…</p></td></tr>';
+                }
+                const base = recoBase().replace(/\/$/, '');
+                try {
+                    const data = await fetchJson(
+                        base + '/recommendation_history?model_name=CNN&crypto=BTC&last_n=12',
+                        10000
+                    );
+                    if (gen !== recordsGen) return;
+                    const list = Array.isArray(data) ? data.slice() : [];
+                    list.reverse();
+                    renderRecords(list.slice(0, 3), new Date(), list);
+                } catch (_) {
+                    if (gen !== recordsGen) return;
+                    if (recordsCard) recordsCard.classList.add('is-error');
+                    if (recordsBody) {
+                        recordsBody.innerHTML = '';
+                        const tr = document.createElement('tr');
+                        const td = document.createElement('td');
+                        td.colSpan = 4;
+                        const wrap = document.createElement('div');
+                        wrap.className = 'records__empty';
+                        wrap.appendChild(textNode('Não foi possível carregar o histórico agora. '));
+                        wrap.appendChild(dashLink());
+                        wrap.appendChild(textNode(' para ver os sinais no painel.'));
+                        td.appendChild(wrap);
+                        tr.appendChild(td);
+                        recordsBody.appendChild(tr);
+                    }
+                    if (recordsFoot) {
+                        recordsFoot.textContent = 'Histórico temporariamente indisponível.';
+                    }
+                }
+            }
+
             loadHeroData();
+            loadRecords();
+            setInterval(function() { loadRecords(); }, 10 * 60 * 1000);
+
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let fgLiveValue = null;
+            let fgLiveLabel = '';
+
+            function getSentimentMeta(raw) {
+                const s = String(raw || '').toLowerCase();
+                if (s === 'positive' || s.includes('positiv')) {
+                    return { label: 'POSITIVO', tone: 'positive' };
+                }
+                if (s === 'negative' || s.includes('negativ')) {
+                    return { label: 'NEGATIVO', tone: 'negative' };
+                }
+                return { label: 'NEUTRO', tone: 'middle' };
+            }
+
+            function sentimentRetryBtn() {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn--quiet';
+                b.textContent = 'Tentar de novo';
+                b.addEventListener('click', function() { loadSentiment(); });
+                return b;
+            }
+
+            function fgRetryBtn() {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn--quiet';
+                b.textContent = 'Tentar de novo';
+                b.addEventListener('click', function() { loadFearGreed(); });
+                return b;
+            }
+
+            function syncExitFgChip() {
+                const chip = document.getElementById('exit-fg-chip');
+                if (!chip || fgLiveValue == null) return;
+                chip.textContent = 'Fear & Greed · ' + fgLiveValue;
+                chip.classList.add('is-live');
+            }
+
+            async function loadSentiment() {
+                const badge = document.getElementById('sent-badge');
+                const conf = document.getElementById('sent-conf');
+                const drivers = document.getElementById('sent-drivers');
+                const note = document.getElementById('sent-note');
+                if (!badge) return;
+
+                badge.textContent = 'Carregando…';
+                badge.classList.add('is-loading');
+                badge.classList.remove('is-loaded');
+                badge.setAttribute('data-tone', 'middle');
+                if (conf) conf.textContent = '';
+                if (drivers) {
+                    drivers.hidden = true;
+                    drivers.replaceChildren();
+                }
+
+                const base = recoBase().replace(/\/$/, '');
+                try {
+                    const data = await fetchJson(
+                        base + '/sentiment_analysis?crypto=BTC&limit=10&lang=mixed',
+                        12000
+                    );
+                    const raw = data.Sentiment || data.sentiment;
+                    const meta = getSentimentMeta(raw);
+                    badge.textContent = meta.label;
+                    badge.setAttribute('data-tone', meta.tone);
+                    badge.classList.remove('is-loading');
+                    if (!prefersReducedMotion) badge.classList.add('is-loaded');
+
+                    const confidence = Number(data.confidence);
+                    if (conf) {
+                        conf.textContent = Number.isFinite(confidence)
+                            ? 'confiança ' + Math.round(confidence) + '%'
+                            : '';
+                    }
+
+                    const list = Array.isArray(data.key_drivers)
+                        ? data.key_drivers.filter(Boolean)
+                        : (Array.isArray(data.keyDrivers) ? data.keyDrivers.filter(Boolean) : []);
+                    if (drivers && list.length) {
+                        drivers.hidden = false;
+                        list.slice(0, 3).forEach(function(item) {
+                            const li = document.createElement('li');
+                            li.textContent = String(item);
+                            drivers.appendChild(li);
+                        });
+                    } else if (drivers && data.rationale) {
+                        drivers.hidden = false;
+                        const li = document.createElement('li');
+                        li.textContent = String(data.rationale).slice(0, 160);
+                        drivers.appendChild(li);
+                    }
+
+                    if (note) {
+                        note.replaceChildren();
+                        note.appendChild(textNode('Sentimento indica clima de mercado; o plano CNN continua sendo a referência de entrada, alvo e stop. '));
+                        const a = document.createElement('a');
+                        a.href = '/dashboard/';
+                        a.textContent = 'Abrir painel';
+                        note.appendChild(a);
+                        note.appendChild(textNode('.'));
+                    }
+                } catch (_) {
+                    badge.textContent = 'Indisponível';
+                    badge.setAttribute('data-tone', 'middle');
+                    badge.classList.remove('is-loading', 'is-loaded');
+                    if (conf) conf.textContent = '';
+                    if (note) {
+                        note.replaceChildren();
+                        note.appendChild(textNode('Não foi possível carregar o sentimento agora. '));
+                        note.appendChild(sentimentRetryBtn());
+                        note.appendChild(textNode(' ou '));
+                        note.appendChild(dashLink());
+                        note.appendChild(textNode('.'));
+                    }
+                }
+            }
+
+            async function loadFearGreed() {
+                const valueEl = document.getElementById('fg-value');
+                const labelEl = document.getElementById('fg-label');
+                const fillEl = document.getElementById('fg-fill');
+                const meterEl = document.getElementById('fg-meter');
+                if (!valueEl) return;
+
+                valueEl.textContent = '—';
+                if (labelEl) labelEl.textContent = 'Carregando…';
+                if (fillEl) fillEl.style.width = '0%';
+                if (meterEl) {
+                    meterEl.setAttribute('aria-valuenow', '0');
+                    meterEl.removeAttribute('aria-valuetext');
+                }
+
+                try {
+                    const data = await fetchJson('https://api.alternative.me/fng/?limit=1', 8000);
+                    const row = data && Array.isArray(data.data) ? data.data[0] : null;
+                    if (!row) throw new Error('empty');
+                    const val = Number(row.value);
+                    const classification = String(row.value_classification || '').trim();
+                    fgLiveValue = Number.isFinite(val) ? val : null;
+                    fgLiveLabel = classification || '—';
+
+                    valueEl.textContent = Number.isFinite(val) ? String(val) : '—';
+                    if (labelEl) labelEl.textContent = classification || '—';
+                    if (fillEl && Number.isFinite(val)) {
+                        fillEl.style.width = Math.max(0, Math.min(100, val)) + '%';
+                    }
+                    if (meterEl && Number.isFinite(val)) {
+                        meterEl.setAttribute('aria-valuenow', String(val));
+                        meterEl.setAttribute('aria-valuetext', (classification || 'Fear and Greed') + ', ' + val);
+                    }
+                    syncExitFgChip();
+                } catch (_) {
+                    valueEl.textContent = '—';
+                    if (meterEl) {
+                        meterEl.setAttribute('aria-valuenow', '0');
+                        meterEl.removeAttribute('aria-valuetext');
+                    }
+                    if (labelEl) {
+                        labelEl.replaceChildren();
+                        labelEl.appendChild(textNode('Indisponível. '));
+                        labelEl.appendChild(fgRetryBtn());
+                    }
+                }
+            }
+
+            function initShowcaseMotion() {
+                const blocks = document.querySelectorAll('.prova-band .showcase');
+                if (!blocks.length) return;
+                if (prefersReducedMotion || typeof IntersectionObserver === 'undefined') {
+                    blocks.forEach(function(el) { el.classList.add('is-visible'); });
+                    return;
+                }
+                const io = new IntersectionObserver(function(entries, obs) {
+                    entries.forEach(function(entry) {
+                        if (!entry.isIntersecting) return;
+                        entry.target.classList.add('is-visible');
+                        obs.unobserve(entry.target);
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+                blocks.forEach(function(el) { io.observe(el); });
+            }
+
+            function initChatDemo() {
+                const root = document.getElementById('chat-demo');
+                if (!root) return;
+                const userBubble = root.querySelector('[data-step="0"]');
+                const botBubble = root.querySelector('[data-step="1"]');
+                const typing = document.getElementById('chat-typing');
+                const toolChips = root.querySelectorAll('.chat-demo__chip');
+                let played = false;
+
+                function lightTools(keys) {
+                    toolChips.forEach(function(chip) {
+                        const key = chip.getAttribute('data-tool');
+                        if (keys.indexOf(key) >= 0) chip.classList.add('is-on');
+                    });
+                }
+
+                function showBubble(el) {
+                    if (!el) return;
+                    el.hidden = false;
+                    requestAnimationFrame(function() { el.classList.add('is-visible'); });
+                }
+
+                function runDemo() {
+                    if (played) return;
+                    played = true;
+                    if (prefersReducedMotion) {
+                        showBubble(userBubble);
+                        showBubble(botBubble);
+                        lightTools(['reco', 'sentiment', 'chart']);
+                        return;
+                    }
+                    setTimeout(function() { showBubble(userBubble); }, 400);
+                    setTimeout(function() {
+                        if (typing) {
+                            typing.hidden = false;
+                            typing.classList.add('is-visible');
+                        }
+                    }, 1400);
+                    setTimeout(function() {
+                        if (typing) {
+                            typing.hidden = true;
+                            typing.classList.remove('is-visible');
+                        }
+                        lightTools(['reco', 'sentiment', 'chart']);
+                        showBubble(botBubble);
+                    }, 2600);
+                }
+
+                if (prefersReducedMotion || typeof IntersectionObserver === 'undefined') {
+                    runDemo();
+                    return;
+                }
+                const io = new IntersectionObserver(function(entries, obs) {
+                    entries.forEach(function(entry) {
+                        if (!entry.isIntersecting) return;
+                        runDemo();
+                        obs.disconnect();
+                    });
+                }, { threshold: 0.35 });
+                io.observe(root);
+            }
+
+            loadSentiment();
+            loadFearGreed();
+            setInterval(function() { loadFearGreed(); }, 15 * 60 * 1000);
+            initShowcaseMotion();
+            initChatDemo();
+
+            (function navCurrent() {
+                const links = Array.prototype.slice.call(
+                    document.querySelectorAll('.nav-links a[href^="#"]')
+                );
+                if (!links.length) return;
+                const sections = links
+                    .map(function(a) {
+                        const id = a.getAttribute('href').slice(1);
+                        const el = document.getElementById(id);
+                        return el ? { a: a, el: el } : null;
+                    })
+                    .filter(Boolean);
+                if (!sections.length) return;
+
+                function setCurrent(id) {
+                    links.forEach(function(a) {
+                        if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'true');
+                        else a.removeAttribute('aria-current');
+                    });
+                }
+
+                if (typeof IntersectionObserver === 'undefined') return;
+                const io = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) setCurrent(entry.target.id);
+                    });
+                }, { rootMargin: '-40% 0px -50% 0px', threshold: 0 });
+                sections.forEach(function(s) { io.observe(s.el); });
+            })();
         });
     </script>
+<!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js?token=cc4ea34a-64cb-41d7-a29f-95c2e1f124b5"></script>
+<!-- impeccable-live-end -->
 </body>
 </html>

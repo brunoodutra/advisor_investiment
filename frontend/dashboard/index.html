@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260905polish">
+    <link rel="stylesheet" href="styles.css?v=20260907nav">
     <link rel="stylesheet" href="tradebot-hmi.css?v=20260905polish">
     <style>
         /* Garante SPA: só a página .active aparece, mesmo se o CSS principal atrasar */
@@ -26,104 +26,103 @@
 </head>
 <body class="min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-gray-900 border-b border-gray-700 sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative">
-                <div class="flex items-center justify-between w-full md:w-auto gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <a class="text-xl md:text-2xl font-bold flex items-center shrink-0" href="/">
-                            <i class="fas fa-chart-line mr-2 text-blue-400"></i>
-                            <span class="hidden sm:inline">CryptoDash Pro</span>
-                            <span class="sm:hidden">CD Pro</span>
-                        </a>
-                    </div>
-                    <button id="mobile-nav-toggle" class="md:hidden nav-btn !p-2" aria-label="Abrir menu" type="button">
-                        <i class="fas fa-bars"></i>
+    <nav class="app-nav bg-gray-900 border-b border-gray-700 sticky top-0 z-50" aria-label="Principal">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center gap-3 min-h-11">
+                <a class="inline-flex items-center gap-2 text-lg font-bold shrink-0 text-white no-underline" href="/">
+                    <i class="fas fa-chart-line text-blue-400" aria-hidden="true"></i>
+                    <span class="hidden sm:inline">CryptoDash Pro</span>
+                    <span class="inline sm:hidden">CD Pro</span>
+                </a>
+
+                <div id="primary-nav" class="hidden lg:flex flex-1 flex-wrap items-center gap-2 min-w-0" role="navigation" aria-label="Páginas">
+                    <button class="nav-btn active" onclick="home_dashboard()" id="nav-dashboard" type="button">
+                        <i class="fas fa-home mr-2" aria-hidden="true"></i>Dashboard
                     </button>
-                </div>
-                <div id="primary-nav" class="hidden md:flex flex-wrap gap-2 w-full md:w-auto">
-                    <button class="nav-btn active" onclick="home_dashboard()" id="nav-dashboard">
-                        <i class="fas fa-home mr-2"></i>Dashboard
+                    <button class="nav-btn" id="nav-trade-bot" type="button">
+                        <i class="fas fa-robot mr-2" aria-hidden="true"></i>Trade Bot
                     </button>
-                    <button class="nav-btn" id="nav-trade-bot">
-                        <i class="fas fa-robot mr-2"></i>Trade Bot
+                    <button class="nav-btn" id="nav-portfolio" type="button">
+                        <i class="fas fa-briefcase mr-2" aria-hidden="true"></i>Portfolio
                     </button>
-                    <button class="nav-btn" id="nav-portfolio">
-                        <i class="fas fa-briefcase mr-2"></i>Portfolio
-                    </button>
-                    <button class="nav-btn relative" id="nav-alerts">
-                        <i class="fas fa-bell mr-2"></i>Alertas
+                    <button class="nav-btn relative" id="nav-alerts" type="button">
+                        <i class="fas fa-bell mr-2" aria-hidden="true"></i>Alertas
                         <span class="alert-badge" id="alert-count" style="display: none;">0</span>
                     </button>
                 </div>
-                <div class="hidden md:flex md:flex-col lg:flex-row lg:flex-nowrap items-stretch lg:items-center gap-3 w-full md:w-auto min-w-0">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <select class="profile-selector w-full sm:w-auto" id="investmentProfile">
-                            <option value="moderate">Moderate</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="aggressive">Aggressive</option>
-                        </select>
-                        <button class="nav-btn" id="open-ai-chat-btn" type="button">
-                            <i class="fas fa-comments mr-2"></i>IA
-                        </button>
-                        <button class="nav-btn" id="open-settings-btn">
-                            <i class="fas fa-cog mr-2"></i><span class="hidden lg:inline">Configurações</span>
-                        </button>
-                        <button class="nav-btn" id="theme-toggle-btn">
-                            <i class="fas fa-moon" id="theme-icon"></i>
-                        </button>
-                    </div>
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="auth-user-label" class="text-sm text-gray-300 truncate max-w-xs hidden lg:inline-block"></span>
-                        <button class="nav-btn" id="auth-login-btn" type="button">
-                            <i class="fas fa-sign-in-alt mr-2"></i><span class="hidden sm:inline">Entrar</span>
-                        </button>
-                        <button class="nav-btn" id="auth-logout-btn" type="button" style="display: none;">
-                            <i class="fas fa-sign-out-alt mr-2"></i><span class="hidden sm:inline">Sair</span>
-                        </button>
-                    </div>
+
+                <div class="hidden lg:flex items-center gap-2 shrink-0" id="nav-tools">
+                    <label class="sr-only" for="investmentProfile">Perfil de risco</label>
+                    <select class="profile-selector" id="investmentProfile" aria-label="Perfil de risco">
+                        <option value="moderate">Moderado</option>
+                        <option value="conservative">Conservador</option>
+                        <option value="aggressive">Agressivo</option>
+                    </select>
+                    <button class="nav-btn" id="open-ai-chat-btn" type="button" title="Chat IA">
+                        <i class="fas fa-comments mr-2" aria-hidden="true"></i>IA
+                    </button>
+                    <button class="nav-btn" id="open-settings-btn" type="button" title="Configurações">
+                        <i class="fas fa-cog mr-2" aria-hidden="true"></i><span class="hidden xl:inline">Configurações</span>
+                    </button>
+                    <button class="nav-btn" id="theme-toggle-btn" type="button" title="Alternar tema">
+                        <i class="fas fa-moon" id="theme-icon" aria-hidden="true"></i>
+                    </button>
+                    <span id="auth-user-label" class="text-sm text-gray-300 truncate max-w-xs hidden xl:inline"></span>
+                    <button class="nav-btn" id="auth-login-btn" type="button">
+                        <i class="fas fa-sign-in-alt mr-2" aria-hidden="true"></i>Entrar
+                    </button>
+                    <button class="nav-btn" id="auth-logout-btn" type="button" style="display: none;">
+                        <i class="fas fa-sign-out-alt mr-2" aria-hidden="true"></i>Sair
+                    </button>
                 </div>
-                <!-- Mobile Drawer (itens que ficam escondidos em telas pequenas) -->
-                <div id="mobile-nav-drawer" class="hidden md:hidden w-full border-t border-gray-700 mt-2 pt-4 space-y-3">
-                    <div class="flex flex-wrap gap-2">
-                        <button class="nav-btn active flex-1" onclick="home_dashboard()" id="nav-dashboard-mobile">
-                            <i class="fas fa-home mr-2"></i>Dashboard
+
+                <button id="mobile-nav-toggle" class="lg:hidden nav-btn ml-auto shrink-0" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobile-nav-drawer" type="button">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div id="mobile-nav-drawer" class="hidden lg:hidden border-t border-gray-700 mt-3 pt-4 pb-2" hidden>
+                <p class="text-xs uppercase tracking-wide text-gray-400 mb-2">Navegação</p>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button class="nav-btn active w-full" onclick="home_dashboard()" id="nav-dashboard-mobile" type="button">
+                        <i class="fas fa-home mr-2" aria-hidden="true"></i>Dashboard
+                    </button>
+                    <button class="nav-btn w-full" id="nav-trade-bot-mobile" type="button">
+                        <i class="fas fa-robot mr-2" aria-hidden="true"></i>Trade Bot
+                    </button>
+                    <button class="nav-btn w-full" id="nav-portfolio-mobile" type="button">
+                        <i class="fas fa-briefcase mr-2" aria-hidden="true"></i>Portfolio
+                    </button>
+                    <button class="nav-btn relative w-full" id="nav-alerts-mobile" type="button">
+                        <i class="fas fa-bell mr-2" aria-hidden="true"></i>Alertas
+                        <span class="alert-badge" id="alert-count-mobile" style="display: none;">0</span>
+                    </button>
+                </div>
+                <p class="text-xs uppercase tracking-wide text-gray-400 mb-2">Perfil e ferramentas</p>
+                <select class="profile-selector w-full mb-3" id="investmentProfile-mobile" aria-label="Perfil de risco">
+                    <option value="moderate">Moderado</option>
+                    <option value="conservative">Conservador</option>
+                    <option value="aggressive">Agressivo</option>
+                </select>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button class="nav-btn w-full" id="open-ai-chat-btn-mobile" type="button">
+                        <i class="fas fa-comments mr-2" aria-hidden="true"></i>Chat IA
+                    </button>
+                    <button class="nav-btn w-full" id="open-settings-btn-mobile" type="button">
+                        <i class="fas fa-cog mr-2" aria-hidden="true"></i>Configurações
+                    </button>
+                    <button class="nav-btn w-full" id="theme-toggle-btn-mobile" type="button">
+                        <i class="fas fa-moon" id="theme-icon-mobile" aria-hidden="true"></i><span class="ml-2">Tema</span>
+                    </button>
+                </div>
+                <div class="border-t border-gray-700 pt-3">
+                    <span id="auth-user-label-mobile" class="block text-sm text-gray-300 truncate mb-2"></span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="nav-btn w-full" id="auth-login-btn-mobile" type="button">
+                            <i class="fas fa-sign-in-alt mr-2" aria-hidden="true"></i>Entrar
                         </button>
-                        <button class="nav-btn flex-1" id="nav-trade-bot-mobile">
-                            <i class="fas fa-robot mr-2"></i>Trade Bot
-                        </button>
-                        <button class="nav-btn flex-1" id="nav-portfolio-mobile">
-                            <i class="fas fa-briefcase mr-2"></i>Portfolio
-                        </button>
-                        <button class="nav-btn flex-1 relative" id="nav-alerts-mobile">
-                            <i class="fas fa-bell mr-2"></i>Alertas
-                            <span class="alert-badge" id="alert-count-mobile" style="display: none;">0</span>
-                        </button>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <select class="profile-selector w-full sm:w-auto" id="investmentProfile-mobile">
-                            <option value="moderate">Moderate</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="aggressive">Aggressive</option>
-                        </select>
-                        <button class="nav-btn flex-1" id="open-ai-chat-btn-mobile" type="button">
-                            <i class="fas fa-comments mr-2"></i>Chat IA
-                        </button>
-                        <button class="nav-btn flex-1" id="open-settings-btn-mobile">
-                            <i class="fas fa-cog mr-2"></i>Configurações
-                        </button>
-                        <button class="nav-btn flex-1" id="theme-toggle-btn-mobile">
-                            <i class="fas fa-moon" id="theme-icon-mobile"></i>
-                            <span class="ml-2">Tema</span>
-                        </button>
-                    </div>
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="auth-user-label-mobile" class="text-sm text-gray-300 truncate max-w-full"></span>
-                        <button class="nav-btn flex-1" id="auth-login-btn-mobile" type="button">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Entrar
-                        </button>
-                        <button class="nav-btn flex-1" id="auth-logout-btn-mobile" type="button" style="display: none;">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Sair
+                        <button class="nav-btn w-full" id="auth-logout-btn-mobile" type="button" style="display: none;">
+                            <i class="fas fa-sign-out-alt mr-2" aria-hidden="true"></i>Sair
                         </button>
                     </div>
                 </div>
@@ -256,7 +255,7 @@
                 <div class="lg:col-span-1">
                     <div class="crypto-card p-6 mb-6">
                         <div class="text-center mb-4">
-                            <img id="crypto-image" src="" alt="" class="w-16 h-16 mx-auto mb-2 rounded-full">
+                            <img id="crypto-image" src="assets/icons/btc.svg" alt="Bitcoin" class="w-16 h-16 mx-auto mb-2 rounded-full">
                             <h3 class="text-2xl font-bold" id="crypto-name">Bitcoin</h3>
                             <p class="text-gray-400" id="crypto-symbol">BTC</p>
                         </div>
@@ -932,7 +931,7 @@
     <script src="supabase.local.js?v=20260828a"></script>
 
     <!-- Custom JavaScript (anti-cache versionado para evitar código velho no navegador) -->
-    <script type="module" src="script.js?v=20260905polish"></script>
+    <script type="module" src="script.js?v=20260907nav"></script>
 
 
     <!-- Settings Modal -->
@@ -1126,7 +1125,7 @@
                     </div>
                     <div class="flex items-center justify-between mt-3 text-xs text-gray-400">
                         <button id="ai-chat-clear-btn" type="button" aria-label="Limpar historico da conversa">
-                            <i class="fas fa-eraser mr-1 text-[11px]"></i>Limpar historico
+                            <i class="fas fa-eraser mr-1 text-xs"></i>Limpar historico
                         </button>
                         <div id="ai-chat-status"></div>
                     </div>
@@ -1138,5 +1137,8 @@
     <!-- End of modal -->
     
     <!-- Closing tags -->
-    </body>
+    <!-- impeccable-live-start -->
+<script src="http://localhost:8400/live.js?token=cc4ea34a-64cb-41d7-a29f-95c2e1f124b5"></script>
+<!-- impeccable-live-end -->
+</body>
     </html>
