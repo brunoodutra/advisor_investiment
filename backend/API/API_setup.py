@@ -104,8 +104,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Agora importa usando o caminho correto
 from API.news_scraper import get_crypto_news, get_sentiment_analysis_payload
-from API.chat_agent.schemas import ChatRequest, ChatAgentResponse, ChatResetRequest, ChatResetResponse
+from API.chat_agent.schemas import (
+    ChatRequest,
+    ChatAgentResponse,
+    ChatResetRequest,
+    ChatResetResponse,
+    ChatReloadLLMResponse,
+)
 from API.chat_agent.service import chat_turn, reset_session
+from API.chat_agent.orchestrator import reload_llm_client
+
 
 try:
     from Trade_Bot.src.config import Config
@@ -130,6 +138,8 @@ except Exception as _cfg_err:
             "confidence_threshold": 0.60,
             "leverage": 10,
             "risk_profile": "moderate",
+            "exit_policy": "protection",
+            "confirm_reversal_signals": 2,
             "last_signal_keys": {},
             "last_loop_at": None,
             "updated_at": now_iso
@@ -270,8 +280,29 @@ def _save_json_dict(file_path: Path, data: dict):
     except Exception as e:
         print(f"Error saving JSON dict to {file_path}: {e}")
 
+def _normalize_exit_policy(value, default: str = "protection") -> str:
+    policy = str(value or default or "protection").strip().lower()
+    aliases = {
+        "hold_to_target": "protection",
+        "tp_sl": "protection",
+        "ignore": "protection",
+        "runner": "target_then_sell",
+        "hold_after_target": "target_then_sell",
+        "trail_after_target": "target_then_sell",
+    }
+    policy = aliases.get(policy, policy)
+    if policy not in ("protection", "confirm", "reversal", "target_then_sell"):
+        return default if default in ("protection", "confirm", "reversal", "target_then_sell") else "protection"
+    return policy
+
 def _get_bot_config() -> dict:
-    return _load_json_dict(_trade_bot_json_path("bot_config.json"), _get_default_bot_config())
+    cfg = _load_json_dict(_trade_bot_json_path("bot_config.json"), _get_default_bot_config())
+    cfg["exit_policy"] = _normalize_exit_policy(cfg.get("exit_policy"))
+    try:
+        cfg["confirm_reversal_signals"] = max(2, int(cfg.get("confirm_reversal_signals") or 2))
+    except (TypeError, ValueError):
+        cfg["confirm_reversal_signals"] = 2
+    return cfg
 
 def _save_bot_config(config_dict: dict) -> dict:
     current = _get_bot_config()
@@ -286,6 +317,24 @@ def _safe_float(value, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+def _trade_notional_usd(trade) -> float:
+    notional = _safe_float(trade.get("position_value_usd"))
+    if notional > 0:
+        return notional
+    quantity = _safe_float(trade.get("quantity"))
+    entry_price = _safe_float(trade.get("entry_price"))
+    return quantity * entry_price if quantity > 0 and entry_price > 0 else 0.0
+
+
+def _trade_margin_usd(trade) -> float:
+    margin = _safe_float(trade.get("margin_used_usd"))
+    if margin > 0:
+        return margin
+    notional = _trade_notional_usd(trade)
+    leverage = _safe_float(trade.get("leverage"), 1.0) or 1.0
+    return notional / leverage if leverage > 0 else notional
+
 
 def _trade_protection_prices(trade) -> tuple:
     sl = _safe_float(trade.get("stop_loss_price"))
@@ -467,12 +516,15 @@ def _get_trade_bot_dashboard():
 
     open_pnl_usd = 0.0
     open_position_value_usd = 0.0
+    open_margin_usd = 0.0
     active_positions = []
     for trade in open_trades:
         symbol = trade.get("symbol")
         entry_price = _safe_float(trade.get("entry_price"))
         quantity = _safe_float(trade.get("quantity"))
-        position_value_usd = _safe_float(trade.get("position_value_usd"))
+        position_value_usd = _trade_notional_usd(trade)
+        margin_used_usd = _trade_margin_usd(trade)
+        leverage = _safe_float(trade.get("leverage"), 1.0) or 1.0
         current_price = None
         current_pnl_usd = None
         current_pnl_percent = None
@@ -493,6 +545,7 @@ def _get_trade_bot_dashboard():
             current_pnl_percent = (current_pnl_usd / position_value_usd * 100) if position_value_usd > 0 else 0.0
             open_pnl_usd += current_pnl_usd
         open_position_value_usd += position_value_usd
+        open_margin_usd += margin_used_usd
 
         stop_loss, take_profit = _trade_protection_prices(trade)
         active_positions.append({
@@ -505,8 +558,11 @@ def _get_trade_bot_dashboard():
             "current_price": round(current_price, 6) if current_price is not None else None,
             "quantity": quantity,
             "position_value_usd": round(position_value_usd, 4),
+            "margin_used_usd": round(margin_used_usd, 4),
+            "leverage": leverage,
             "stop_loss": stop_loss,
             "take_profit": take_profit,
+            "target_reached": bool(trade.get("target_reached")),
             "pnl_usd": round(current_pnl_usd, 4) if current_pnl_usd is not None else None,
             "pnl_percent": round(current_pnl_percent, 4) if current_pnl_percent is not None else None,
             "timestamp": trade.get("timestamp"),
@@ -555,6 +611,8 @@ def _get_trade_bot_dashboard():
             "avg_pnl_percent": round(avg_pnl_percent, 4),
             "open_pnl_usd": round(open_pnl_usd, 4),
             "open_position_value_usd": round(open_position_value_usd, 4),
+            "open_margin_usd": round(open_margin_usd, 4),
+            "exposure_usd": round(open_position_value_usd, 4),
             "buy_entries": sum(item["buy"] for item in symbol_totals),
             "sell_entries": sum(item["sell"] for item in symbol_totals),
             "history_events": len(order_history),
@@ -863,6 +921,8 @@ class BotConfigUpdateRequest(BaseModel):
     confidence_threshold: Optional[float] = None
     leverage: Optional[int] = None
     risk_profile: Optional[str] = None
+    exit_policy: Optional[str] = None
+    confirm_reversal_signals: Optional[int] = None
 
 class BotToggleRequest(BaseModel):
     status: Optional[str] = None
@@ -874,6 +934,13 @@ def get_trade_bot_config_api():
 @app.post("/trade_bot/config")
 def update_trade_bot_config_api(req: BotConfigUpdateRequest):
     data = req.dict(exclude_unset=True)
+    if "exit_policy" in data:
+        data["exit_policy"] = _normalize_exit_policy(data.get("exit_policy"))
+    if "confirm_reversal_signals" in data:
+        try:
+            data["confirm_reversal_signals"] = max(2, int(data.get("confirm_reversal_signals") or 2))
+        except (TypeError, ValueError):
+            data["confirm_reversal_signals"] = 2
     updated = _save_bot_config(data)
     return {"status": "success", "config": updated}
 
@@ -939,7 +1006,7 @@ async def chat_api(request: ChatRequest):
     except Exception as exc:
         msg = (
             "Não foi possível obter uma resposta da IA agora. "
-            "Verifique GROQ_API_KEY / OPENROUTER_API_KEY no .env e os logs da API."
+            "Verifique GROQ_API_KEY / OPENROUTER_API_KEY / DEEPINFRA_API_KEY no .env e os logs da API."
         )
         print(f"[chat] Erro: {exc}")
         from API.chat_agent.schemas import MissionStatus
@@ -951,7 +1018,65 @@ async def chat_api(request: ChatRequest):
             blocked_reason="llm_unavailable",
             summary=None,
             tools_used=[],
+            trace=[],
         )
+
+
+@app.post("/chat/stream")
+async def chat_stream_api(request: ChatRequest):
+    """SSE stream with live tool/LLM trace events, then a final payload."""
+    from fastapi.responses import StreamingResponse
+    import queue
+
+    event_queue: queue.Queue = queue.Queue()
+
+    def _worker():
+        def on_event(ev: dict):
+            event_queue.put(ev)
+
+        try:
+            response = chat_turn(request, on_event=on_event)
+            event_queue.put({"type": "final", "payload": response.dict()})
+        except Exception as exc:
+            print(f"[chat/stream] Erro: {exc}")
+            event_queue.put(
+                {
+                    "type": "final",
+                    "payload": {
+                        "content": "Falha ao consultar IA.",
+                        "answer": "Falha ao consultar IA.",
+                        "mission": {"completed": False, "reason": None, "confidence": None},
+                        "blocked": True,
+                        "blocked_reason": "llm_unavailable",
+                        "summary": None,
+                        "tools_used": [],
+                        "trace": [{"step": "error", "detail": str(exc), "ok": False}],
+                    },
+                }
+            )
+        finally:
+            event_queue.put(None)
+
+    async def event_generator():
+        worker = asyncio.create_task(asyncio.to_thread(_worker))
+        try:
+            while True:
+                item = await asyncio.to_thread(event_queue.get)
+                if item is None:
+                    break
+                yield f"data: {json.dumps(item, ensure_ascii=False)}\n\n"
+        finally:
+            await worker
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/chat/reset", response_model=ChatResetResponse)
@@ -961,6 +1086,18 @@ async def chat_reset_api(request: ChatResetRequest):
     except Exception as exc:
         print(f"[chat/reset] Erro: {exc}")
     return ChatResetResponse(status="ok")
+
+
+@app.post("/chat/reload-llm", response_model=ChatReloadLLMResponse)
+async def chat_reload_llm_api():
+    try:
+        info = await asyncio.to_thread(reload_llm_client)
+        return ChatReloadLLMResponse(status="ok", **info)
+    except Exception as exc:
+        print(f"[chat/reload-llm] Erro: {exc}")
+        return ChatReloadLLMResponse(status="error")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

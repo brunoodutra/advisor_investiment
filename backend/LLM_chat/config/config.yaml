@@ -32,11 +32,15 @@ embedding:
   base_url: "http://ollama:11434" #"http://192.168.81.3:11435"
 
 llm:
-  provider: 'groq' #'openrouter'
+  # Provedores suportados: groq | openrouter | deepinfra
+  provider: 'openrouter' #'groq' #'openrouter' #'deepinfra'
   # Modelos por finalidade, conforme notebook de produção
   models:
-    #chat: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" 
-    chat: "llama-3.1-8b-instant"
+    chat: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    #chat: "llama-3.1-8b-instant"
+    # Exemplos DeepInfra (OpenAI-compatible):
+    #chat: "meta-llama/Meta-Llama-3.1-8B-Instruct"
+    #chat: "deepseek-ai/DeepSeek-V3.1"
   # Parâmetros globais (ajuste conforme suporte do servidor/modelo)
   params:
     temperature: 0.5

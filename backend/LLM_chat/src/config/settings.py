@@ -39,9 +39,9 @@ class LLMParamsSettings(BaseModel):
     seed: int = 42
 
 class LLMSettings(BaseModel):
-    provider: str = "ollama"       # <- novo campo
-    base_url: str | None = None    # usado apenas se provider == ollama
-    api_key: str | None = None     # usado apenas se provider == groq
+    provider: str = "groq"
+    base_url: str | None = None
+    api_key: str | None = None
     models: LLMModelsSettings
     params: LLMParamsSettings
     provider_params: Dict[str, Dict] = {}
@@ -85,26 +85,35 @@ def load_settings() -> AppSettings:
         data = yaml.safe_load(f) or {}
     settings = AppSettings(**data)
 
-    # --- Ajustes dinâmicos ---
-    # Se provider == ollama, pode sobrescrever base_url via OLLAMA_HOST
-    if settings.llm.provider == "ollama":
-        ollama_env = os.getenv("OLLAMA_HOST")
-        if ollama_env:
-            settings.embedding.base_url = ollama_env
-            settings.llm.base_url = ollama_env
-            settings.llm.api_key = os.getenv("OLLAMA_API_KEY")
+    ollama_env = os.getenv("OLLAMA_HOST")
+    if ollama_env:
+        settings.embedding.base_url = ollama_env
 
-    # Se provider == groq, injeta API key do ambiente
     if settings.llm.provider == "groq":
-        groq_key = os.getenv("GROQ_API_KEY")
+        groq_key = (os.getenv("GROQ_API_KEY") or "").strip()
         if groq_key:
             settings.llm.api_key = groq_key
+        if not (settings.llm.base_url or "").strip():
+            settings.llm.base_url = "https://api.groq.com/openai/v1"
 
     if settings.llm.provider == "openrouter":
-        or_key = os.getenv("OPENROUTER_API_KEY")
-        or_base = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        or_key = (os.getenv("OPENROUTER_API_KEY") or "").strip()
+        or_base = (os.getenv("OPENROUTER_BASE_URL") or "").strip() or "https://openrouter.ai/api/v1"
         if or_key:
             settings.llm.api_key = or_key
         settings.llm.base_url = or_base
+
+    if settings.llm.provider == "deepinfra":
+        di_key = (
+            (os.getenv("DEEPINFRA_API_KEY") or "").strip()
+            or (os.getenv("DEEPINFRA_TOKEN") or "").strip()
+        )
+        di_base = (
+            (os.getenv("DEEPINFRA_BASE_URL") or "").strip()
+            or "https://api.deepinfra.com/v1/openai"
+        )
+        if di_key:
+            settings.llm.api_key = di_key
+        settings.llm.base_url = di_base
 
     return settings
