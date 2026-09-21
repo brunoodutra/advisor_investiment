@@ -27,10 +27,26 @@ class ChatResetResponse(BaseModel):
     status: str = "ok"
 
 
+class ChatReloadLLMResponse(BaseModel):
+    status: str = "ok"
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+
+
 class MissionStatus(BaseModel):
     completed: bool = False
     reason: Optional[str] = None
     confidence: Optional[int] = None
+
+
+class TraceStep(BaseModel):
+    step: str
+    detail: Optional[str] = None
+    tool: Optional[str] = None
+    args: Optional[Dict[str, Any]] = None
+    ok: Optional[bool] = None
+    error: Optional[str] = None
 
 
 class ChatAgentResponse(BaseModel):
@@ -41,3 +57,4 @@ class ChatAgentResponse(BaseModel):
     blocked_reason: Optional[str] = None
     summary: Optional[str] = None
     tools_used: List[str] = Field(default_factory=list)
+    trace: List[TraceStep] = Field(default_factory=list)

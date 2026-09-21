@@ -5,6 +5,187 @@ from API.news_scraper import get_sentiment_analysis_payload
 
 ALWAYS_ALLOWED_TOOLS = {"get_trade_bot_summary"}
 NEWS_LIMIT = 5
+HISTORY_LIMIT = 20
+KNOWN_CRYPTOS = ("BTC", "ETH", "SOL", "ADA", "XRP")
+
+CRYPTO_ALIASES = {
+    "btc": "BTC",
+    "bitcoin": "BTC",
+    "biticoin": "BTC",
+    "biticooind": "BTC",
+    "biticooin": "BTC",
+    "eth": "ETH",
+    "ethereum": "ETH",
+    "ether": "ETH",
+    "sol": "SOL",
+    "solana": "SOL",
+    "ada": "ADA",
+    "cardano": "ADA",
+    "xrp": "XRP",
+    "ripple": "XRP",
+}
+
+TOOL_DEFINITIONS: List[Dict[str, Any]] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recommendation",
+            "description": "Retorna a ultima recomendacao de IA (Buy/Sell/Hold) para UM criptoativo.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "crypto": {"type": "string", "description": "Simbolo do ativo, ex: BTC"},
+                    "model": {"type": "string", "description": "Modelo de IA, default CNN"},
+                },
+                "required": ["crypto"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_latest_recommendations",
+            "description": (
+                "Lista a ultima recomendacao de TODOS os ativos monitorados (BTC, ETH, SOL, ADA, XRP). "
+                "Use para perguntas como 'ultimas recomendacoes de venda/compra' ou panorama geral. "
+                "Filtre com signal=Sell|Buy|Hold quando o usuario pedir um tipo especifico."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "model": {"type": "string", "description": "Modelo de IA, default CNN"},
+                    "signal": {
+                        "type": "string",
+                        "description": "Filtro opcional: Sell, Buy ou Hold. Sem filtro retorna todos.",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recommendation_history",
+            "description": (
+                "Historico recente de recomendacoes de UM ativo. "
+                "Use para 'ultimas vendas do BTC' ou sinais recentes de um crypto."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "crypto": {"type": "string"},
+                    "model": {"type": "string"},
+                    "last_n": {"type": "integer", "minimum": 1, "maximum": 50},
+                    "signal": {
+                        "type": "string",
+                        "description": "Filtro opcional: Sell, Buy ou Hold",
+                    },
+                },
+                "required": ["crypto"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_target_stop",
+            "description": "Retorna target e stop-loss para um criptoativo e perfil de risco.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "crypto": {"type": "string"},
+                    "profile": {"type": "string", "description": "conservative|moderate|aggressive"},
+                    "model": {"type": "string"},
+                },
+                "required": ["crypto"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_crypto_news_sentiment",
+            "description": "Analise de sentimento das noticias recentes do ativo.",
+            "parameters": {
+                "type": "object",
+                "properties": {"crypto": {"type": "string"}},
+                "required": ["crypto"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_crypto_news",
+            "description": "Lista noticias recentes do ativo (titulo, resumo, fonte).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "crypto": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 5},
+                },
+                "required": ["crypto"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_trade_bot_summary",
+            "description": "Resumo do trade bot: status, PnL e posicoes ativas.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_chart_snapshot",
+            "description": "Snapshot do grafico atual (candles recentes e indicadores ativos). Sem argumentos.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_market_context",
+            "description": "Contexto de mercado (Fear&Greed, dominance, etc). Sem argumentos.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+]
+
+
+def normalize_crypto(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+    cleaned = "".join(ch for ch in raw.lower() if ch.isalnum() or ch.isspace())
+    cleaned = " ".join(cleaned.split())
+    if cleaned in CRYPTO_ALIASES:
+        return CRYPTO_ALIASES[cleaned]
+    compact = cleaned.replace(" ", "")
+    if compact in CRYPTO_ALIASES:
+        return CRYPTO_ALIASES[compact]
+    upper = raw.upper().strip()
+    if upper in KNOWN_CRYPTOS:
+        return upper
+    # fuzzy: contains known name
+    for alias, symbol in CRYPTO_ALIASES.items():
+        if alias in compact or compact in alias:
+            return symbol
+    return upper or None
+
+
+def get_openai_tools(allowed_tools: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    allowed = set(allowed_tools or []) | set(ALWAYS_ALLOWED_TOOLS)
+    tools = []
+    for spec in TOOL_DEFINITIONS:
+        name = ((spec.get("function") or {}).get("name") or "")
+        if name in allowed:
+            tools.append(spec)
+    return tools
 
 
 def _api_setup():
@@ -13,8 +194,26 @@ def _api_setup():
     return API_setup
 
 
+def _normalize_signal(signal: Optional[str]) -> Optional[str]:
+    if not signal:
+        return None
+    s = str(signal).strip().capitalize()
+    if s in {"Sell", "Buy", "Hold"}:
+        return s
+    low = str(signal).strip().lower()
+    mapping = {
+        "venda": "Sell",
+        "sell": "Sell",
+        "compra": "Buy",
+        "buy": "Buy",
+        "manter": "Hold",
+        "hold": "Hold",
+    }
+    return mapping.get(low)
+
+
 def get_recommendation(crypto: str, model: str = "CNN") -> Dict[str, Any]:
-    symbol = str(crypto or "").upper().strip()
+    symbol = normalize_crypto(crypto)
     if not symbol:
         return {"error": "crypto_required"}
     try:
@@ -33,8 +232,69 @@ def get_recommendation(crypto: str, model: str = "CNN") -> Dict[str, Any]:
         return {"error": str(exc), "crypto": symbol}
 
 
+def list_latest_recommendations(model: str = "CNN", signal: Optional[str] = None) -> Dict[str, Any]:
+    wanted = _normalize_signal(signal)
+    items = []
+    for symbol in KNOWN_CRYPTOS:
+        rec = get_recommendation(symbol, model)
+        if rec.get("error"):
+            items.append({"crypto": symbol, "error": rec.get("error")})
+            continue
+        if wanted and str(rec.get("recommendation") or "").strip().capitalize() != wanted:
+            continue
+        items.append(rec)
+    return {
+        "model": model,
+        "signal_filter": wanted,
+        "count": len([i for i in items if not i.get("error")]),
+        "items": items,
+    }
+
+
+def get_recommendation_history_tool(
+    crypto: str,
+    model: str = "CNN",
+    last_n: int = HISTORY_LIMIT,
+    signal: Optional[str] = None,
+) -> Dict[str, Any]:
+    symbol = normalize_crypto(crypto)
+    if not symbol:
+        return {"error": "crypto_required"}
+    safe_n = max(1, min(int(last_n or HISTORY_LIMIT), 50))
+    wanted = _normalize_signal(signal)
+    try:
+        history = _api_setup().get_recommendation_history(model, symbol, safe_n)
+        if not history:
+            return {"error": "not_available", "crypto": symbol}
+        items = []
+        for row in history:
+            reco = str(row.get("recommendation") or "").strip().capitalize()
+            if wanted and reco != wanted:
+                continue
+            items.append(
+                {
+                    "Date": row.get("Date"),
+                    "Time": row.get("Time"),
+                    "recommendation": row.get("recommendation"),
+                    "percentage": row.get("percentage"),
+                    "Price": row.get("Price"),
+                }
+            )
+        # history is chronological; prefer most recent first for the LLM
+        items = list(reversed(items))[:safe_n]
+        return {
+            "crypto": symbol,
+            "model": model,
+            "signal_filter": wanted,
+            "count": len(items),
+            "items": items,
+        }
+    except Exception as exc:
+        return {"error": str(exc), "crypto": symbol}
+
+
 def get_target_stop(crypto: str, profile: str = "moderate", model: str = "CNN") -> Dict[str, Any]:
-    symbol = str(crypto or "").upper().strip()
+    symbol = normalize_crypto(crypto)
     if not symbol:
         return {"error": "crypto_required"}
     try:
@@ -52,7 +312,7 @@ def get_target_stop(crypto: str, profile: str = "moderate", model: str = "CNN") 
 
 
 def get_crypto_news_sentiment(crypto: str) -> Dict[str, Any]:
-    symbol = str(crypto or "").upper().strip()
+    symbol = normalize_crypto(crypto)
     if not symbol:
         return {"error": "crypto_required"}
     try:
@@ -75,7 +335,7 @@ def get_crypto_news_sentiment(crypto: str) -> Dict[str, Any]:
 
 
 def get_crypto_news(crypto: str, limit: int = NEWS_LIMIT) -> Dict[str, Any]:
-    symbol = str(crypto or "").upper().strip()
+    symbol = normalize_crypto(crypto)
     if not symbol:
         return {"error": "crypto_required"}
     safe_limit = max(1, min(int(limit or NEWS_LIMIT), NEWS_LIMIT))
@@ -163,12 +423,21 @@ def execute_tool(
     if not _is_tool_allowed(name, allowed_tools):
         return {"error": "tool_not_allowed", "tool": name}
 
-    crypto = args.get("crypto") or hints.get("crypto")
+    crypto = normalize_crypto(args.get("crypto") or hints.get("crypto"))
     model = args.get("model") or hints.get("model") or "CNN"
     profile = args.get("profile") or hints.get("profile") or "moderate"
 
     if name == "get_recommendation":
         return get_recommendation(crypto, model)
+    if name == "list_latest_recommendations":
+        return list_latest_recommendations(model, args.get("signal"))
+    if name == "get_recommendation_history":
+        return get_recommendation_history_tool(
+            crypto,
+            model,
+            args.get("last_n", HISTORY_LIMIT),
+            args.get("signal"),
+        )
     if name == "get_target_stop":
         return get_target_stop(crypto, profile, model)
     if name == "get_crypto_news_sentiment":

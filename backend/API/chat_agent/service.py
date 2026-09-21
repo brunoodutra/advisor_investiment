@@ -1,5 +1,8 @@
+from typing import Any, Callable, Optional
+
 from API.chat_agent import memory
 from API.chat_agent.orchestrator import run_orchestrator
+from API.chat_agent.prompts import merge_message_histories
 from API.chat_agent.schemas import ChatAgentResponse, ChatHints, ChatRequest, MissionStatus
 
 
@@ -7,7 +10,10 @@ def reset_session(session_id: str) -> None:
     memory.reset_session(session_id)
 
 
-def chat_turn(request: ChatRequest) -> ChatAgentResponse:
+def chat_turn(
+    request: ChatRequest,
+    on_event: Optional[Callable[[dict], None]] = None,
+) -> ChatAgentResponse:
     session = memory.load_session(request.sessionId)
 
     if session.get("turn_count", 0) >= session.get("max_turns", 8):
@@ -27,13 +33,16 @@ def chat_turn(request: ChatRequest) -> ChatAgentResponse:
             blocked_reason="turn_limit_reached",
             summary=session.get("summary"),
             tools_used=[],
+            trace=[],
         )
 
     hints_model = request.hints or ChatHints()
     hints = hints_model.dict()
     allowed_tools = list(hints.get("allowed_tools") or [])
 
-    messages = request.messages if isinstance(request.messages, list) else []
+    request_messages = request.messages if isinstance(request.messages, list) else []
+    messages = merge_message_histories(request_messages, session.get("messages_tail") or [])
+
     user_msgs = [m for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     if user_msgs:
         memory.append_messages_tail(session, [user_msgs[-1]])
@@ -44,6 +53,7 @@ def chat_turn(request: ChatRequest) -> ChatAgentResponse:
         context=request.context,
         allowed_tools=allowed_tools,
         session_summary=session.get("summary"),
+        on_event=on_event,
     )
 
     session["turn_count"] = int(session.get("turn_count", 0)) + 1
