@@ -27,12 +27,12 @@ const LIMITS = {
 };
 
 const TOOL_MAP = {
-    chart: 'get_chart_snapshot',
-    reco: 'get_recommendation',
-    sentiment: 'get_crypto_news_sentiment',
-    news: 'get_crypto_news',
-    market: 'get_market_context',
-    targetStop: 'get_target_stop'
+    chart: ['get_chart_snapshot'],
+    reco: ['get_recommendation', 'list_latest_recommendations', 'get_recommendation_history'],
+    sentiment: ['get_crypto_news_sentiment'],
+    news: ['get_crypto_news'],
+    market: ['get_market_context'],
+    targetStop: ['get_target_stop']
 };
 
 function getStoredSessionState() {
@@ -109,7 +109,9 @@ function pruneMessages(messages) {
     pruned = pruned.map(m => ({
         role: m.role,
         content: clampString(m.content ?? '', LIMITS.maxMessageChars),
-        ts: String(m.ts ?? Date.now())
+        ts: String(m.ts ?? Date.now()),
+        ...(Array.isArray(m.tools_used) ? { tools_used: m.tools_used.slice(0, 12) } : {}),
+        ...(Array.isArray(m.trace) ? { trace: m.trace.slice(-12) } : {})
     }));
 
     while (estimateTotalChars(pruned) > LIMITS.maxTotalChars && pruned.length > 6) {
@@ -310,12 +312,48 @@ function setStoredMessages(messages) {
     writeJsonToStorage(STORAGE_KEYS.messages, pruneMessages(messages));
 }
 
-function addMessage(role, content) {
+function addMessage(role, content, meta = null) {
     const messages = getStoredMessages();
-    messages.push({ role, content, ts: String(Date.now()) });
+    const entry = { role, content, ts: String(Date.now()) };
+    if (meta && typeof meta === 'object') {
+        if (Array.isArray(meta.tools_used) && meta.tools_used.length) {
+            entry.tools_used = meta.tools_used;
+        }
+        if (Array.isArray(meta.trace) && meta.trace.length) {
+            entry.trace = meta.trace.slice(-12);
+        }
+    }
+    messages.push(entry);
     setStoredMessages(messages);
     renderMessages();
     scrollMessagesToBottom();
+}
+
+function formatToolsLabel(tools) {
+    if (!Array.isArray(tools) || !tools.length) return '';
+    return `Tools: ${tools.join(', ')}`;
+}
+
+function formatTraceStatus(event) {
+    if (!event || typeof event !== 'object') return 'Consultando IA…';
+    if (event.type === 'final') {
+        const tools = event.payload?.tools_used;
+        if (Array.isArray(tools) && tools.length) return formatToolsLabel(tools);
+        return 'Resposta pronta';
+    }
+    if (event.detail) return String(event.detail);
+    if (event.tool) {
+        if (event.step === 'tool_result') {
+            return event.ok === false
+                ? `${event.tool} falhou`
+                : `${event.tool} ok`;
+        }
+        return `Usando ${event.tool}…`;
+    }
+    if (event.step === 'llm_planning') return 'Planejando tools…';
+    if (event.step === 'llm_final') return 'Gerando resposta…';
+    if (event.step === 'start') return 'Consultando IA…';
+    return 'Consultando IA…';
 }
 
 function clearMessages() {
@@ -410,8 +448,12 @@ function getContextSelection() {
 
 function buildAllowedTools(selection) {
     const allowed = [];
-    for (const [key, toolName] of Object.entries(TOOL_MAP)) {
-        if (selection[key]) allowed.push(toolName);
+    for (const [key, toolNames] of Object.entries(TOOL_MAP)) {
+        if (!selection[key]) continue;
+        const names = Array.isArray(toolNames) ? toolNames : [toolNames];
+        for (const name of names) {
+            if (!allowed.includes(name)) allowed.push(name);
+        }
     }
     return allowed;
 }
@@ -473,11 +515,22 @@ function renderMessages() {
         const isUser = m.role === 'user';
         wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
 
-        const bubble = document.createElement('div');
-        bubble.className = `${isUser ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-4 py-3 max-w-2xl whitespace-pre-wrap`;
-        bubble.textContent = m.content ?? '';
+        const col = document.createElement('div');
+        col.className = 'max-w-2xl flex flex-col gap-1';
 
-        wrapper.appendChild(bubble);
+        const bubble = document.createElement('div');
+        bubble.className = `${isUser ? 'bg-blue-600' : 'bg-gray-700'} text-white rounded-lg px-4 py-3 whitespace-pre-wrap`;
+        bubble.textContent = m.content ?? '';
+        col.appendChild(bubble);
+
+        if (!isUser && Array.isArray(m.tools_used) && m.tools_used.length) {
+            const meta = document.createElement('div');
+            meta.className = 'text-xs text-gray-500 px-1';
+            meta.textContent = formatToolsLabel(m.tools_used);
+            col.appendChild(meta);
+        }
+
+        wrapper.appendChild(col);
         list.appendChild(wrapper);
     }
 }
@@ -505,6 +558,66 @@ async function callChatApi({ messages, hints, context, highlights }) {
 
     const data = await response.json().catch(() => null);
     return data;
+}
+
+async function callChatStreamApi({ messages, hints, context, highlights, onEvent }) {
+    const url = `${CONFIG.apis.chat.replace(/\/+$/, '')}/chat/stream`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: tradeBotAuthHeaders({
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream'
+        }),
+        body: JSON.stringify({
+            sessionId: getOrCreateSessionId(),
+            messages,
+            hints,
+            context,
+            highlights
+        })
+    });
+
+    if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`HTTP ${response.status}${text ? `: ${text}` : ''}`);
+    }
+    if (!response.body) {
+        throw new Error('Stream sem body');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let finalPayload = null;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() ?? '';
+        for (const chunk of chunks) {
+            const line = chunk.split('\n').find(l => l.startsWith('data:'));
+            if (!line) continue;
+            const raw = line.slice(5).trim();
+            if (!raw) continue;
+            let event;
+            try {
+                event = JSON.parse(raw);
+            } catch {
+                continue;
+            }
+            if (typeof onEvent === 'function') onEvent(event);
+            if (event?.type === 'final' && event.payload) {
+                finalPayload = event.payload;
+            }
+        }
+    }
+
+    if (!finalPayload) {
+        throw new Error('Stream terminou sem payload final');
+    }
+    return finalPayload;
 }
 
 function extractAssistantText(apiResponse) {
@@ -547,13 +660,52 @@ async function handleSend() {
     let summary = sessionState.summary;
     let assistantText = null;
     let hasError = false;
+    let toolsUsed = [];
+    let trace = [];
 
     try {
         const messages = getStoredMessages();
         const { hints, context } = buildChatPayload();
         const highlights = getHighlights();
 
-        const apiResponse = await callChatApi({ messages, hints, context, highlights });
+        let apiResponse;
+        try {
+            apiResponse = await callChatStreamApi({
+                messages,
+                hints,
+                context,
+                highlights,
+                onEvent: (event) => {
+                    setStatus(formatTraceStatus(event));
+                    if (Array.isArray(event?.tools_used) && event.tools_used.length) {
+                        toolsUsed = event.tools_used;
+                    }
+                    if (event?.type === 'trace') {
+                        trace.push({
+                            step: event.step,
+                            detail: event.detail,
+                            tool: event.tool,
+                            ok: event.ok,
+                            error: event.error
+                        });
+                    }
+                    if (event?.type === 'final' && Array.isArray(event.payload?.tools_used)) {
+                        toolsUsed = event.payload.tools_used;
+                    }
+                    if (event?.type === 'final' && Array.isArray(event.payload?.trace)) {
+                        trace = event.payload.trace;
+                    }
+                }
+            });
+        } catch (streamError) {
+            console.warn('Chat stream falhou; fallback POST /chat', streamError);
+            setStatus('Consultando IA…');
+            apiResponse = await callChatApi({ messages, hints, context, highlights });
+            if (Array.isArray(apiResponse?.tools_used)) toolsUsed = apiResponse.tools_used;
+            if (Array.isArray(apiResponse?.trace)) trace = apiResponse.trace;
+            if (toolsUsed.length) setStatus(formatToolsLabel(toolsUsed));
+        }
+
         assistantText = extractAssistantText(apiResponse) ?? 'Nao consegui interpretar a resposta do backend.';
 
         if (apiResponse && typeof apiResponse === 'object') {
@@ -576,10 +728,17 @@ async function handleSend() {
 
             const s = apiResponse.summary;
             summary = typeof s === 'string' && s.trim() ? s.trim() : summary;
+
+            if (Array.isArray(apiResponse.tools_used) && apiResponse.tools_used.length) {
+                toolsUsed = apiResponse.tools_used;
+            }
+            if (Array.isArray(apiResponse.trace) && apiResponse.trace.length) {
+                trace = apiResponse.trace;
+            }
         }
 
-        addMessage('assistant', assistantText);
-        setStatus('');
+        addMessage('assistant', assistantText, { tools_used: toolsUsed, trace });
+        setStatus(toolsUsed.length ? formatToolsLabel(toolsUsed) : '');
     } catch (error) {
         hasError = true;
         console.error('AI chat error:', error);

@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css?v=20260907nav">
-    <link rel="stylesheet" href="tradebot-hmi.css?v=20260905polish">
+    <link rel="stylesheet" href="tradebot-hmi.css?v=20260915invested">
     <style>
         /* Garante SPA: só a página .active aparece, mesmo se o CSS principal atrasar */
         .page-view { display: none !important; }
@@ -445,9 +445,10 @@
                     <div class="tb-readout__sub" id="tb-open-pnl-sub">0 posições ativas</div>
                 </article>
                 <article class="tb-readout tb-readout--lead">
-                    <span class="tb-readout__tag">Posições</span>
-                    <div class="tb-readout__value tabular-nums" id="trade-bot-active-positions">0</div>
-                    <div class="tb-readout__sub" id="tb-active-sub">Expostas: $0.00</div>
+                    <span class="tb-readout__tag">Investido</span>
+                    <div class="tb-readout__value tabular-nums" id="trade-bot-invested">$0.00</div>
+                    <div class="tb-readout__sub" id="tb-invested-sub">0 posições · exposição $0.00</div>
+                    <span id="trade-bot-active-positions" class="hidden" aria-hidden="true">0</span>
                 </article>
                 <article class="tb-readout">
                     <span class="tb-readout__tag">P&amp;L Realizado</span>
@@ -795,6 +796,16 @@
                         <p class="text-xs text-gray-400 mt-1">Para operações em futuros</p>
                     </div>
                 </div>
+                <div class="pt-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-1" for="tb-cfg-exit-policy">Saída da posição</label>
+                    <select id="tb-cfg-exit-policy" class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <option value="protection">Só target e stop — ignora o primeiro Sell da IA</option>
+                        <option value="target_then_sell">Alvo e depois Sell — segura acima do alvo; vende no pullback ou no Sell</option>
+                        <option value="confirm">Fecha no 2º candle contrário consecutivo</option>
+                        <option value="reversal">Fecha no primeiro sinal contrário (antigo)</option>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">No modo alvo+Sell, o bot não realiza no Fibonacci: espera o preço passar do alvo e só sai no primeiro Sell ainda acima, ou se o preço voltar abaixo do alvo.</p>
+                </div>
 
                 <!-- Footer Buttons -->
                 <div class="border-t border-gray-700 pt-4 flex justify-end gap-3">
@@ -931,7 +942,7 @@
     <script src="supabase.local.js?v=20260828a"></script>
 
     <!-- Custom JavaScript (anti-cache versionado para evitar código velho no navegador) -->
-    <script type="module" src="script.js?v=20260907nav"></script>
+    <script type="module" src="script.js?v=20260918exit"></script>
 
 
     <!-- Settings Modal -->

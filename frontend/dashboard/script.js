@@ -9,8 +9,8 @@ import { toggleMAPanel, applyMASettings, clearAllMA, handlePeriodCheckboxChange,
 import { initAuth, wireAuthUI, requireAuthThenNavigate } from './auth.js?v=20260828a';
 import { loadUserSettings } from './userSettings.js?v=20260828a';
 import { refreshAlerts, wireAlertsUI } from './alerts.js?v=20260828a';
-import { initAIChat } from './chat.js?v=20260828a';
-import { renderTradeBotCard, showTradeBotPage, loadTradeBotDashboardPage } from './tradeBotDashboard.js?v=20260905polish';
+import { initAIChat } from './chat.js?v=20260920trace';
+import { renderTradeBotCard, showTradeBotPage, loadTradeBotDashboardPage } from './tradeBotDashboard.js?v=20260918exit2';
 
 let userSettingsSchemaNotified = false;
 

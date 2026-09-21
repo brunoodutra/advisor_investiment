@@ -248,6 +248,18 @@ function updateSummary(summary = {}) {
     if (winRateEl) winRateEl.textContent = formatPercent(summary.win_rate);
     if (closedTradesEl) closedTradesEl.textContent = `${summary.closed_trades || 0} trades fechados`;
     if (activePositionsEl) activePositionsEl.textContent = String(summary.active_positions || 0);
+    const investedUsd = Number(summary.open_margin_usd ?? summary.open_position_value_usd ?? 0);
+    const notionalUsd = Number(summary.open_position_value_usd ?? summary.exposure_usd ?? investedUsd);
+    const investedEl = document.getElementById('trade-bot-invested');
+    if (investedEl) investedEl.textContent = formatCurrency(investedUsd);
+    const investedSub = document.getElementById('tb-invested-sub');
+    if (investedSub) {
+        const n = Number(summary.active_positions || 0);
+        const posLabel = `${n} posiç${n === 1 ? 'ão' : 'ões'}`;
+        investedSub.textContent = Math.abs(notionalUsd - investedUsd) > 0.005
+            ? `${posLabel} · exposição ${formatCurrency(notionalUsd)}`
+            : `${posLabel} ativas`;
+    }
     if (openPnlEl) {
         openPnlEl.textContent = formatCurrency(summary.open_pnl_usd);
         openPnlEl.className = `tb-readout__value tabular-nums ${numSignClass(Number(summary.open_pnl_usd || 0))}`;
@@ -286,6 +298,10 @@ export async function renderTradeBotCard(container) {
                 <div class="flex justify-between">
                     <span class="text-gray-400">Posições abertas</span>
                     <span class="font-bold">${summary.active_positions || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Investido</span>
+                    <span class="font-bold">${formatCurrency(summary.open_margin_usd ?? summary.open_position_value_usd)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-400">Win rate</span>
@@ -432,7 +448,12 @@ async function renderPositionSparkline(container, pos) {
 const TB_CLOSE_REASONS = {
     TAKE_PROFIT: 'Alvo atingido (take profit)',
     STOP_LOSS: 'Stop loss',
-    REVERSAL: 'Sinal de venda da IA',
+    REVERSAL: 'Sinal contrário da IA',
+    REVERSAL_SIGNAL: 'Sinal contrário da IA',
+    REVERSAL_IGNORED: 'Sinal contrário ignorado — posição segue até o alvo/stop',
+    TARGET_GIVEBACK: 'Voltou abaixo do alvo',
+    RUNNER_SELL: 'Sell depois do alvo',
+    TARGET_REACHED: 'Alvo tocado — esperando Sell ou pullback',
     MANUAL: 'Fechamento manual',
     MANUAL_CLOSE: 'Fechamento manual',
     EMERGENCY_CLOSE: 'Fechamento emergencial',
@@ -710,8 +731,10 @@ function initMasterToggle() {
     emergency?.addEventListener('click', async () => {
         const positions = Array.isArray(_tbState.activePositions) ? _tbState.activePositions : [];
         const summary = _tbState.lastData?.summary || {};
-        const exposure = Number(summary.open_position_value_usd || 0)
+        const exposure = Number(summary.open_position_value_usd || summary.exposure_usd || 0)
             || positions.reduce((sum, p) => sum + (Number(p.position_value_usd) || (Number(p.quantity || 0) * Number(p.current_price ?? p.entry_price ?? 0)) || 0), 0);
+        const invested = Number(summary.open_margin_usd ?? 0)
+            || positions.reduce((sum, p) => sum + Number(p.margin_used_usd ?? p.position_value_usd ?? 0), 0);
         const openPnl = Number(summary.open_pnl_usd ?? positions.reduce((sum, p) => sum + Number(p.pnl_usd || 0), 0));
 
         const accepted = await openTbConfirm({
@@ -719,6 +742,7 @@ function initMasterToggle() {
             trigger: emergency,
             stats: [
                 ['Posições abertas', String(positions.length)],
+                ['Investido', fmtUSD(invested)],
                 ['Exposição total', fmtUSD(exposure)],
                 ['P&L aberto', fmtUSD(openPnl), numSignClass(openPnl)],
                 ['Estado após', 'Bot pausado'],
@@ -807,10 +831,10 @@ function openTradeDetailModal(trade) {
         <div class="stat"><div class="lbl">Take Profit</div><div class="val">${fmtUSD(trade.take_profit)}</div></div>
         <div class="stat"><div class="lbl">P&amp;L (USD)</div><div class="val ${numSignClass(pnl)}">${fmtUSD(pnl)}</div></div>
         <div class="stat"><div class="lbl">P&amp;L (%)</div><div class="val ${numSignClass(pnlPct)}">${fmtPct(pnlPct)}</div></div>
-        <div class="stat"><div class="lbl">Aberto em</div><div class="val" style="font-size:.9rem;font-weight:600;">${toLocalDateTime(trade.opened_at)}</div></div>
-        <div class="stat"><div class="lbl">Fechado em</div><div class="val" style="font-size:.9rem;font-weight:600;">${toLocalDateTime(trade.closed_at || trade.exit_at) || '—'}</div></div>
+        <div class="stat"><div class="lbl">Aberto em</div><div class="val">${toLocalDateTime(trade.opened_at)}</div></div>
+        <div class="stat"><div class="lbl">Fechado em</div><div class="val">${toLocalDateTime(trade.closed_at || trade.exit_at) || '—'}</div></div>
         <div class="stat"><div class="lbl">Duração</div><div class="val">${duration}</div></div>
-        <div class="stat"><div class="lbl">Motivo Saída</div><div class="val" style="font-size:.9rem;font-weight:600;">${escapeHtml(fmtCloseReason(trade.exit_reason || trade.close_reason))}</div></div>
+        <div class="stat"><div class="lbl">Motivo Saída</div><div class="val">${escapeHtml(fmtCloseReason(trade.exit_reason || trade.close_reason))}</div></div>
       </div>
 
       ${mkt && Object.keys(mkt).length ? `
@@ -822,7 +846,7 @@ function openTradeDetailModal(trade) {
       ${(trade.rationale || trade.signal_reason || trade.note) ? `
         <div class="tb-modal-section-title">Razão / Observações</div>
         <div class="tb-mkt-chip" style="padding:0.75rem 0.9rem;line-height:1.55;">
-          <div class="val" style="font-weight:500;font-size:.875rem;white-space:pre-wrap;">${escapeHtml(trade.rationale || trade.signal_reason || trade.note || '')}</div>
+          <div class="val" style="font-weight:500;white-space:pre-wrap;">${escapeHtml(trade.rationale || trade.signal_reason || trade.note || '')}</div>
         </div>` : ''}
     `;
     modal.classList.remove('hidden');
@@ -882,6 +906,8 @@ function renderOpenPositionsRich(positions = []) {
                 <td>
                   <div class="font-semibold text-base">${escapeHtml(p.symbol || '—')}</div>
                   <div class="text-xs text-gray-400">Qtd: ${escapeHtml(String(p.quantity ?? p.size ?? '—'))}</div>
+                  <div class="text-xs text-gray-400 tabular-nums">Inv: ${fmtUSD(p.margin_used_usd ?? p.position_value_usd)}</div>
+                  ${p.target_reached ? '<div class="text-xs text-yellow-400">Alvo tocado · esperando Sell</div>' : ''}
                 </td>
                 <td><span class="tb-side-pill ${isShort ? 'short' : 'long'}">
                     <i class="fas ${isShort ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
@@ -1035,7 +1061,7 @@ function renderOpenDetailPanel(pos) {
               <div class="mb-4 font-bold text-xl tabular-nums ${numSignClass(pnlPct)}">${fmtPct(pnlPct)}</div>
               <div class="tb-modal-section-title">Mercado (momento entrada)</div>
               <div class="space-y-2 mb-4">
-                ${chips.map(([l,v]) => `<div class="tb-mkt-row tb-mkt-chip"><span class="lbl" style="font-size:.65rem;text-transform:uppercase;letter-spacing:.03em;color:#8b949e;font-weight:600;">${l}</span><span class="val" style="font-weight:700;font-variant-numeric:tabular-nums;">${escapeHtml(String(v))}</span></div>`).join('')}
+                ${chips.map(([l,v]) => `<div class="tb-mkt-row tb-mkt-chip"><span class="lbl">${l}</span><span class="val">${escapeHtml(String(v))}</span></div>`).join('')}
               </div>
               <div class="tb-modal-section-title">Razão</div>
               <p class="text-sm text-gray-300 leading-relaxed mb-4">${escapeHtml(pos.rationale || pos.signal_reason || 'Sinal gerado automaticamente pela estratégia configurada.')}</p>
@@ -1422,7 +1448,8 @@ function updateSummaryEnhanced(summary = {}, tradesClosed = []) {
     const profitFactor = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? 99 : 0);
     const maxDD = Number(summary.max_drawdown_percent || 0);
     const expectancy = trades > 0 ? realized / trades : 0;
-    const exposure = Number(summary.exposure_usd || summary.open_notional || 0);
+    const investedUsd = Number(summary.open_margin_usd ?? summary.open_position_value_usd ?? 0);
+    const exposure = Number(summary.open_position_value_usd ?? summary.exposure_usd ?? investedUsd);
 
     const elPnl = document.getElementById('trade-bot-realized-pnl');
     if (elPnl) { elPnl.className = `tb-readout__value tabular-nums ${numSignClass(realized)}`; }
@@ -1446,8 +1473,16 @@ function updateSummaryEnhanced(summary = {}, tradesClosed = []) {
     const exp = document.getElementById('tb-expectancy');
     if (exp) { exp.textContent = fmtUSD(expectancy); exp.className = `tb-readout__value tabular-nums ${numSignClass(expectancy)}`; }
 
-    const actSub = document.getElementById('tb-active-sub');
-    if (actSub) actSub.textContent = `Expostas: ${fmtUSD(exposure)}`;
+    const investedEl = document.getElementById('trade-bot-invested');
+    if (investedEl) investedEl.textContent = fmtUSD(investedUsd);
+    const investedSub = document.getElementById('tb-invested-sub');
+    if (investedSub) {
+        const n = Number(summary.active_positions || 0);
+        const posLabel = `${n} posiç${n === 1 ? 'ão' : 'ões'}`;
+        investedSub.textContent = Math.abs(exposure - investedUsd) > 0.005
+            ? `${posLabel} · exposição ${fmtUSD(exposure)}`
+            : `${posLabel} ativas`;
+    }
 }
 
 /* ---------- Modal de Configurações do Trade Bot (Limites por Cripto) ---------- */
@@ -1489,6 +1524,7 @@ function initBotConfigModal() {
     const riskInput = document.getElementById('tb-cfg-risk');
     const confInput = document.getElementById('tb-cfg-confidence');
     const levInput = document.getElementById('tb-cfg-leverage');
+    const exitPolicySel = document.getElementById('tb-cfg-exit-policy');
 
     const closeModal = () => {
         modal?.classList.add('hidden');
@@ -1507,6 +1543,10 @@ function initBotConfigModal() {
             if (riskInput) riskInput.value = config.risk_per_trade != null ? (config.risk_per_trade * 100).toFixed(1) : '1.5';
             if (confInput) confInput.value = config.confidence_threshold != null ? Math.round(config.confidence_threshold * 100) : '60';
             if (levInput) levInput.value = config.leverage ?? 10;
+            if (exitPolicySel) {
+                const policy = String(config.exit_policy || 'protection').toLowerCase();
+                exitPolicySel.value = ['protection', 'confirm', 'reversal', 'target_then_sell'].includes(policy) ? policy : 'protection';
+            }
 
             if (cryptoList) {
                 cryptoList.innerHTML = '';
@@ -1563,6 +1603,7 @@ function initBotConfigModal() {
         const riskVal = (parseFloat(riskInput?.value) || 1.5) / 100;
         const confVal = (parseFloat(confInput?.value) || 60) / 100;
         const levVal = parseInt(levInput?.value, 10) || 10;
+        const exitPolicyVal = exitPolicySel?.value || 'protection';
 
         const payload = {
             status: statusVal,
@@ -1570,7 +1611,9 @@ function initBotConfigModal() {
             max_allocation_per_crypto: maxAllocation,
             risk_per_trade: riskVal,
             confidence_threshold: confVal,
-            leverage: levVal
+            leverage: levVal,
+            exit_policy: exitPolicyVal,
+            confirm_reversal_signals: 2
         };
 
         const originalText = saveBtn.innerHTML;
