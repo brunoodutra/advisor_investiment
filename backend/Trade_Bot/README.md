@@ -9,7 +9,7 @@ Loop contínuo:
 1. Heartbeat (`last_loop_at`) e consumo da fila `data/commands.json` (mesmo se o bot estiver pausado).
 2. Sincronizar estado local com a exchange (fills de entrada, SL e TP).
 3. Buscar a última recomendação + alvo/stop no perfil configurado (`conservative` / `moderate` / `aggressive`).
-4. Abrir, manter ou fechar posição **somente se o sinal for novo** (`Date|Time|recommendation`).
+4. Abrir posição só em sinal **novo**. Com posição aberta, a saída padrão é **target/stop** (`exit_policy: protection`); o primeiro Sell da IA **não** zera o trade.
 5. Persistir trades, eventos e config com lock de arquivo.
 
 Sinais: `RECOMMENDATION_API_URL` (no Docker, `http://api:8000`). Código da API: `backend/API/API_setup.py`.
@@ -38,7 +38,18 @@ A API **não envia ordens**. `POST /trade_bot/emergency_close` e `POST /trade_bo
 ### Mercado
 
 - `MARKET_MODE=FUTURES` — USD-M; Buy = long, Sell = short; `set_leverage` antes da entrada; SL e TP separados. Se a proteção falhar, a posição é fechada (`PROTECTION_FAILED`).
-- `MARKET_MODE=SPOT` — só long; Sell fecha; OCO quando a compra confirma.
+- `MARKET_MODE=SPOT` — só long; Sell da IA não fecha a posição no modo `protection`; OCO quando a compra confirma.
+
+## Saída da posição
+
+`exit_policy` em `bot_settings.yaml` / `bot_config.json`:
+
+- `protection` (padrão) — entra no Buy/Sell, arma TP/SL e ignora o sinal contrário da IA. Fecha só no alvo, no stop, ou no comando manual/emergencial.
+- `target_then_sell` — o alvo **não** fecha a posição. Quando o preço toca o Fibonacci, o bot segura. Sai no primeiro Sell ainda acima do alvo, ou se o preço voltar abaixo do alvo. Stop original continua valendo até o alvo ser tocado.
+- `confirm` — o primeiro candle contrário é ignorado; o N-ésimo consecutivo (`confirm_reversal_signals`, padrão 2) fecha como reversal.
+- `reversal` — comportamento antigo: o primeiro Sell fecha o long (e o primeiro Buy fecha o short).
+
+Evento `REVERSAL_IGNORED` registra o Sell/Buy que foi visto e não executado.
 
 ## Risco
 
@@ -57,7 +68,7 @@ Perfil de alvo/stop: `risk_profile` em `bot_settings.yaml` / `bot_config.json` (
 - `paper_account.json` — saldo e ordens paper
 - `logs/` — logs diários
 
-Eventos: `ENTRY_SUBMITTED`, `ENTRY_ACCEPTED`, `ENTRY_FILLED`, `ENTRY_FAILED`, `FUTURES_PROTECTION_CREATED`, `FUTURES_PROTECTION_FAILED`, `SPOT_PROTECTION_CREATED`, `STOP_LOSS_TRIGGERED`, `TAKE_PROFIT_TRIGGERED`, `REVERSAL_SIGNAL`, `TRADE_CLOSED`, `TRADE_SKIPPED`, `STALE_PAPER_STATE_CLOSED`.
+Eventos: `ENTRY_SUBMITTED`, `ENTRY_ACCEPTED`, `ENTRY_FILLED`, `ENTRY_FAILED`, `FUTURES_PROTECTION_CREATED`, `FUTURES_PROTECTION_FAILED`, `SPOT_PROTECTION_CREATED`, `SPOT_RUNNER_ARMED`, `TAKE_PROFIT_DISARMED`, `TARGET_REACHED`, `STOP_LOSS_TRIGGERED`, `TAKE_PROFIT_TRIGGERED`, `REVERSAL_SIGNAL`, `REVERSAL_IGNORED`, `RUNNER_SELL`, `TRADE_CLOSED`, `TRADE_SKIPPED`, `STALE_PAPER_STATE_CLOSED`.
 
 ## Configuração
 

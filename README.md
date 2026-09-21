@@ -20,6 +20,9 @@ Crie um `.env` na raiz (mesma pasta do `docker-compose.yml`):
 OPENROUTER_API_KEY=
 OPENROUTER_BASE_URL=
 GROQ_API_KEY=
+DEEPINFRA_API_KEY=
+# DEEPINFRA_TOKEN=   # alias aceito (mesmo valor do token DeepInfra)
+DEEPINFRA_BASE_URL=
 OLLAMA_HOST=
 
 # --- Trade bot ---
@@ -36,6 +39,8 @@ TRADE_BOT_API_TOKEN=
 # Origens do dashboard (CORS). Padrão: localhost:8080
 FRONTEND_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
 ```
+
+Provedor ativo em `backend/LLM_chat/config/config.yaml` (`llm.provider`: `groq` | `openrouter` | `deepinfra`) + modelo em `llm.models.chat`. DeepInfra usa o endpoint OpenAI-compatible (`https://api.deepinfra.com/v1/openai`).
 
 Não versionar chaves. Se vazou, rotacione.
 

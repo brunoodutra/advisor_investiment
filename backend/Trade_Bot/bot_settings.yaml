@@ -26,6 +26,14 @@ bot:
   # Frequência do log de P&L total (em ciclos)
   pnl_log_interval: 1
 
+  # Saída com posição aberta:
+  #   protection       — só target/stop (ignora Buy/Sell contrário da IA)
+  #   confirm          — fecha no N-ésimo candle contrário consecutivo
+  #   reversal         — fecha no primeiro sinal contrário (comportamento antigo)
+  #   target_then_sell — toca o alvo e segura; vende no pullback abaixo do alvo ou no primeiro Sell ainda acima
+  exit_policy: "protection"
+  confirm_reversal_signals: 2
+
 allocation:
   # Limite padrão em USDT por criptomoeda (caso o par não esteja listado abaixo)
   default_crypto_limit: 100.0

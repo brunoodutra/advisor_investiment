@@ -209,7 +209,11 @@ class TradeManager:
                     self.close_trade_cleanup(trade, reason="STOP_LOSS", exit_price=fill_price)
                     return
 
-            if trade.get("take_profit_order_id"):
+            if self._exit_policy() == "target_then_sell":
+                self._disarm_take_profit_order(trade)
+                if self._manage_runner_price_exit(trade, current_price):
+                    return
+            elif trade.get("take_profit_order_id"):
                 tp_order = self.exchange.get_order(symbol, trade["take_profit_order_id"])
                 if tp_order and tp_order.get("status") == "FILLED":
                     fill_price = self._resolve_order_fill_price(tp_order, trade, fallback=trade.get("take_profit_price") or current_price)
@@ -232,9 +236,27 @@ class TradeManager:
         sl_price, tp_price = self._protection_levels(trade["side"], entry_price, trade.get("signal_data"))
         trade["stop_loss_price"] = sl_price
         trade["take_profit_price"] = tp_price
+        runner = self._exit_policy() == "target_then_sell"
 
         if getattr(self.exchange, "market_type", "") == "spot":
             if trade["side"] != "buy":
+                return
+            if runner:
+                trade["take_profit_order_id"] = None
+                trade["oco_order_id"] = None
+                self.state.update_trade(trade)
+                self.state.record_event(
+                    "SPOT_RUNNER_ARMED",
+                    symbol=symbol,
+                    status="open",
+                    details={
+                        "mode": "spot",
+                        "stop_loss_price": sl_price,
+                        "take_profit_price": tp_price,
+                        "note": "alvo não vira ordem; espera Sell acima ou pullback",
+                    },
+                    trade=trade,
+                )
                 return
             try:
                 oco = self.exchange.create_oco_order(symbol, "sell", quantity, tp_price, sl_price)
@@ -288,21 +310,21 @@ class TradeManager:
             return
 
         sl_order = self.exchange.create_stop_loss_order(symbol, side, quantity, sl_price)
-        tp_order = self.exchange.create_take_profit_order(symbol, side, quantity, tp_price)
-        if not sl_order or not tp_order:
+        tp_order = None if runner else self.exchange.create_take_profit_order(symbol, side, quantity, tp_price)
+        if not sl_order or (not runner and not tp_order):
             self.logger.error("Proteção futures incompleta para %s (sl=%s tp=%s). Fechando posição.", symbol, bool(sl_order), bool(tp_order))
             self.state.record_event(
                 "FUTURES_PROTECTION_FAILED",
                 symbol=symbol,
                 status="error",
-                details={"stop_ok": bool(sl_order), "take_profit_ok": bool(tp_order), "stop_loss_price": sl_price, "take_profit_price": tp_price},
+                details={"stop_ok": bool(sl_order), "take_profit_ok": bool(tp_order), "stop_loss_price": sl_price, "take_profit_price": tp_price, "runner": runner},
                 trade=trade,
             )
             self.close_position_market(trade, reason="PROTECTION_FAILED")
             return
 
         trade["stop_loss_order_id"] = sl_order["id"]
-        trade["take_profit_order_id"] = tp_order["id"]
+        trade["take_profit_order_id"] = None if runner else tp_order["id"]
         self.state.update_trade(trade)
         self.state.record_event(
             "FUTURES_PROTECTION_CREATED",
@@ -314,6 +336,7 @@ class TradeManager:
                 "take_profit_order_id": trade.get("take_profit_order_id"),
                 "stop_loss_price": sl_price,
                 "take_profit_price": tp_price,
+                "runner": runner,
             },
             trade=trade,
         )
@@ -444,6 +467,293 @@ class TradeManager:
                 self.logger.error("Falha ao processar comando %s: %s", cmd.get("id"), e, exc_info=True)
                 finish_command(cmd["id"], error=str(e))
 
+    def _exit_policy(self, cfg=None):
+        cfg = cfg if isinstance(cfg, dict) else (
+            self.state.load_config() if hasattr(self.state, "load_config") else {}
+        )
+        policy = str(cfg.get("exit_policy") or getattr(Config, "EXIT_POLICY", "protection") or "protection").strip().lower()
+        aliases = {
+            "hold_to_target": "protection",
+            "tp_sl": "protection",
+            "ignore": "protection",
+            "runner": "target_then_sell",
+            "hold_after_target": "target_then_sell",
+            "trail_after_target": "target_then_sell",
+        }
+        policy = aliases.get(policy, policy)
+        if policy not in ("protection", "confirm", "reversal", "target_then_sell"):
+            return "protection"
+        return policy
+
+    def _ticker_last(self, symbol):
+        ticker = self.exchange.get_ticker(symbol)
+        if hasattr(self.exchange, "_ticker_price"):
+            price = self.exchange._ticker_price(ticker)
+            if price:
+                return self._to_float(price)
+        if ticker:
+            return self._to_float(ticker.get("last") or ticker.get("close") or ticker.get("bid"))
+        return 0.0
+
+    def _price_beyond_target(self, trade, price):
+        tp = self._to_float(trade.get("take_profit_price"))
+        price = self._to_float(price)
+        if tp <= 0 or price <= 0:
+            return False
+        side = str(trade.get("side") or "").lower()
+        if side == "buy":
+            return price >= tp
+        if side == "sell":
+            return price <= tp
+        return False
+
+    def _price_gave_back_target(self, trade, price):
+        tp = self._to_float(trade.get("take_profit_price"))
+        price = self._to_float(price)
+        if tp <= 0 or price <= 0:
+            return False
+        side = str(trade.get("side") or "").lower()
+        if side == "buy":
+            return price < tp
+        if side == "sell":
+            return price > tp
+        return False
+
+    def _software_stop_hit(self, trade, price):
+        sl = self._to_float(trade.get("stop_loss_price"))
+        price = self._to_float(price)
+        if sl <= 0 or price <= 0:
+            return False
+        side = str(trade.get("side") or "").lower()
+        if side == "buy":
+            return price <= sl
+        if side == "sell":
+            return price >= sl
+        return False
+
+    def _disarm_take_profit_order(self, trade):
+        if trade.get("runner_tp_disarmed"):
+            return
+        symbol = trade.get("symbol")
+        changed = False
+        if trade.get("take_profit_order_id"):
+            self.exchange.cancel_order(symbol, trade.get("take_profit_order_id"))
+            trade["take_profit_order_id"] = None
+            changed = True
+        if trade.get("oco_order_id"):
+            self.exchange.cancel_order(symbol, trade.get("oco_order_id"))
+            trade["oco_order_id"] = None
+            trade["stop_loss_order_id"] = None
+            trade["take_profit_order_id"] = None
+            changed = True
+        trade["runner_tp_disarmed"] = True
+        if hasattr(self.state, "update_trade"):
+            self.state.update_trade(trade)
+        if changed:
+            self.state.record_event(
+                "TAKE_PROFIT_DISARMED",
+                symbol=symbol,
+                status="held",
+                details={"reason": "target_then_sell", "take_profit_price": trade.get("take_profit_price")},
+                trade=trade,
+            )
+
+    def _mark_target_reached(self, trade, price):
+        if trade.get("target_reached"):
+            return False
+        trade["target_reached"] = True
+        trade["target_reached_at"] = datetime.now(timezone.utc).isoformat()
+        trade["target_reached_price"] = self._to_float(price)
+        if hasattr(self.state, "update_trade"):
+            self.state.update_trade(trade)
+        self.logger.info(
+            "Alvo tocado em %s a %.6f. Segurando até Sell acima do alvo ou pullback.",
+            trade.get("symbol"),
+            self._to_float(price),
+        )
+        self.state.record_event(
+            "TARGET_REACHED",
+            symbol=trade.get("symbol"),
+            status="held",
+            details={
+                "price": self._to_float(price),
+                "take_profit_price": trade.get("take_profit_price"),
+            },
+            trade=trade,
+        )
+        return True
+
+    def _manage_runner_price_exit(self, trade, current_price):
+        price = self._to_float(current_price)
+        if price <= 0:
+            return False
+        if not trade.get("target_reached") and self._software_stop_hit(trade, price) and not trade.get("stop_loss_order_id"):
+            self.close_position_market(trade, reason="STOP_LOSS")
+            return True
+        if not trade.get("target_reached"):
+            if self._price_beyond_target(trade, price):
+                self._mark_target_reached(trade, price)
+            return False
+        if self._price_gave_back_target(trade, price):
+            self.logger.info("Pullback abaixo do alvo em %s. Fechando.", trade.get("symbol"))
+            self.close_position_market(trade, reason="TARGET_GIVEBACK")
+            return True
+        return False
+
+    def _confirm_reversal_needed(self, cfg=None):
+        cfg = cfg if isinstance(cfg, dict) else (
+            self.state.load_config() if hasattr(self.state, "load_config") else {}
+        )
+        needed = cfg.get("confirm_reversal_signals", getattr(Config, "CONFIRM_REVERSAL_SIGNALS", 2))
+        try:
+            needed = int(needed)
+        except (TypeError, ValueError):
+            needed = 2
+        return max(2, needed)
+
+    @staticmethod
+    def _is_opposite_recommendation(side, recommendation):
+        side = str(side or "").lower()
+        rec = str(recommendation or "")
+        return (side == "buy" and rec == "Sell") or (side == "sell" and rec == "Buy")
+
+    def _reset_opposite_streak(self, trade):
+        if not trade:
+            return
+        if int(trade.get("opposite_signal_streak") or 0) == 0:
+            return
+        trade["opposite_signal_streak"] = 0
+        if hasattr(self.state, "update_trade"):
+            self.state.update_trade(trade)
+
+    def _ignore_reversal(self, symbol, trade, signal_data, signal_key, extra_details=None):
+        details = {
+            "recommendation": signal_data.get("recommendation"),
+            "market_type": getattr(self.exchange, "market_type", "unknown"),
+            "signal_key": signal_key,
+            "exit_policy": self._exit_policy(),
+            "stop_loss_price": trade.get("stop_loss_price"),
+            "take_profit_price": trade.get("take_profit_price"),
+        }
+        if extra_details:
+            details.update(extra_details)
+        self.logger.info(
+            "Sinal contrário ignorado para %s (%s). Posição segue até target/stop.",
+            symbol,
+            signal_data.get("recommendation"),
+        )
+        self.state.set_last_signal_key(symbol, signal_key)
+        self.state.record_event(
+            "REVERSAL_IGNORED",
+            symbol=symbol,
+            status="held",
+            details=details,
+            trade=trade,
+        )
+
+    def _close_from_reversal(self, symbol, trade, signal_data, signal_key):
+        recommendation = signal_data.get("recommendation")
+        self.logger.info("Reversal signal for %s. Closing position.", symbol)
+        self.state.set_last_signal_key(symbol, signal_key)
+        self.state.record_event(
+            "REVERSAL_SIGNAL",
+            symbol=symbol,
+            status="signal",
+            details={
+                "recommendation": recommendation,
+                "market_type": getattr(self.exchange, "market_type", "unknown"),
+                "signal_key": signal_key,
+            },
+            trade=trade,
+        )
+        if getattr(self.exchange, "market_type", "") == "spot" and not getattr(self.exchange, "is_paper", False):
+            position = self.exchange.get_position(symbol)
+            if position and self._to_float(position.get("total", 0.0)) > 0:
+                self.close_position_market(trade, reason="REVERSAL")
+            else:
+                self.logger.warning("Position for %s not found or zero balance. Skipping close.", symbol)
+                self.state.close_trade(symbol, exit_time=datetime.now(timezone.utc).isoformat())
+                self.state.record_event(
+                    "POSITION_NOT_FOUND",
+                    symbol=symbol,
+                    status="skipped",
+                    details={"reason": "position_not_found_or_zero_balance"},
+                    trade=trade,
+                )
+            return
+        self.close_position_market(trade, reason="REVERSAL")
+
+    def _manage_open_trade_signal(self, symbol, trade, signal_data, is_new_signal, cfg):
+        if not is_new_signal:
+            return
+        recommendation = signal_data.get("recommendation")
+        signal_key = signal_data.get("signal_key")
+        if not self._is_opposite_recommendation(trade.get("side"), recommendation):
+            self._reset_opposite_streak(trade)
+            if signal_key:
+                self.state.set_last_signal_key(symbol, signal_key)
+            return
+
+        policy = self._exit_policy(cfg)
+        if policy == "protection":
+            self._ignore_reversal(symbol, trade, signal_data, signal_key)
+            return
+
+        if policy == "target_then_sell":
+            if not trade.get("target_reached"):
+                price = self._ticker_last(symbol)
+                if self._price_beyond_target(trade, price):
+                    self._mark_target_reached(trade, price)
+                else:
+                    self._ignore_reversal(
+                        symbol,
+                        trade,
+                        signal_data,
+                        signal_key,
+                        extra_details={"reason": "target_not_reached"},
+                    )
+                    return
+            price = self._ticker_last(symbol)
+            if self._price_gave_back_target(trade, price):
+                self.state.set_last_signal_key(symbol, signal_key)
+                self.close_position_market(trade, reason="TARGET_GIVEBACK")
+                return
+            if self._price_beyond_target(trade, price) or price <= 0:
+                self.logger.info("Sell acima do alvo em %s. Fechando.", symbol)
+                self.state.set_last_signal_key(symbol, signal_key)
+                self.state.record_event(
+                    "RUNNER_SELL",
+                    symbol=symbol,
+                    status="signal",
+                    details={
+                        "recommendation": recommendation,
+                        "price": price,
+                        "take_profit_price": trade.get("take_profit_price"),
+                        "signal_key": signal_key,
+                    },
+                    trade=trade,
+                )
+                self.close_position_market(trade, reason="RUNNER_SELL")
+            return
+
+        if policy == "confirm":
+            streak = int(trade.get("opposite_signal_streak") or 0) + 1
+            trade["opposite_signal_streak"] = streak
+            if hasattr(self.state, "update_trade"):
+                self.state.update_trade(trade)
+            needed = self._confirm_reversal_needed(cfg)
+            if streak < needed:
+                self._ignore_reversal(
+                    symbol,
+                    trade,
+                    signal_data,
+                    signal_key,
+                    extra_details={"opposite_signal_streak": streak, "confirm_reversal_signals": needed},
+                )
+                return
+
+        self._close_from_reversal(symbol, trade, signal_data, signal_key)
+
     def process_signal(self, symbol, signal_data):
         if not signal_data:
             return
@@ -463,66 +773,20 @@ class TradeManager:
         last_key = self.state.get_last_signal_key(symbol)
         is_new_signal = bool(signal_key) and signal_key != last_key
 
-        if getattr(self.exchange, "market_type", "") == "spot":
-            if active_trade:
-                if active_trade.get("side") == "buy" and recommendation == "Sell" and is_new_signal:
-                    self.logger.info("Sinal de Sell no spot para %s. Fechando posicao.", symbol)
-                    self.state.set_last_signal_key(symbol, signal_key)
-                    self.state.record_event(
-                        "REVERSAL_SIGNAL",
-                        symbol=symbol,
-                        status="signal",
-                        details={"recommendation": recommendation, "market_type": "spot", "signal_key": signal_key},
-                        trade=active_trade,
-                    )
-                    if getattr(self.exchange, "is_paper", False):
-                        self.close_position_market(active_trade, reason="REVERSAL")
-                        return
-                    position = self.exchange.get_position(symbol)
-                    if position and self._to_float(position.get("total", 0.0)) > 0:
-                        self.close_position_market(active_trade, reason="REVERSAL")
-                    else:
-                        self.logger.warning("Position for %s not found or zero balance. Skipping close.", symbol)
-                        self.state.close_trade(symbol, exit_time=datetime.now(timezone.utc).isoformat())
-                        self.state.record_event(
-                            "POSITION_NOT_FOUND",
-                            symbol=symbol,
-                            status="skipped",
-                            details={"reason": "position_not_found_or_zero_balance"},
-                            trade=active_trade,
-                        )
-                return
-
-            if recommendation == "Buy":
-                if not is_new_signal:
-                    return
-                if not is_active:
-                    self.logger.debug("Bot pausado. Sinal de compra para %s ignorado.", symbol)
-                    return
-                self.state.set_last_signal_key(symbol, signal_key)
-                self.open_position(symbol, "buy", signal_data)
+        if active_trade:
+            self._manage_open_trade_signal(symbol, active_trade, signal_data, is_new_signal, cfg)
             return
 
-        if active_trade:
-            is_reversal = (
-                (active_trade["side"] == "buy" and recommendation == "Sell")
-                or (active_trade["side"] == "sell" and recommendation == "Buy")
-            )
-            if is_reversal and is_new_signal:
-                self.logger.info("Reversal signal for %s. Closing position.", symbol)
-                self.state.set_last_signal_key(symbol, signal_key)
-                self.state.record_event(
-                    "REVERSAL_SIGNAL",
-                    symbol=symbol,
-                    status="signal",
-                    details={
-                        "recommendation": recommendation,
-                        "market_type": getattr(self.exchange, "market_type", "unknown"),
-                        "signal_key": signal_key,
-                    },
-                    trade=active_trade,
-                )
-                self.close_position_market(active_trade, reason="REVERSAL")
+        if getattr(self.exchange, "market_type", "") == "spot":
+            if recommendation != "Buy":
+                return
+            if not is_new_signal:
+                return
+            if not is_active:
+                self.logger.debug("Bot pausado. Sinal de compra para %s ignorado.", symbol)
+                return
+            self.state.set_last_signal_key(symbol, signal_key)
+            self.open_position(symbol, "buy", signal_data)
             return
 
         if recommendation not in ("Buy", "Sell"):

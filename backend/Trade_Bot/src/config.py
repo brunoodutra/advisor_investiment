@@ -59,6 +59,9 @@ class Config:
     RISK_PROFILE = str(_bot_yaml.get("risk_profile", "moderate")).lower()
     # Frequencia do log de P&L total (em ciclos); 0 = desativado, 1 = a cada ciclo, 2 = a cada 2 ciclos, etc.
     PNL_LOG_INTERVAL = int(_bot_yaml.get("pnl_log_interval", 1))
+    # protection | confirm | reversal | target_then_sell — ver bot_settings.yaml
+    EXIT_POLICY = str(_bot_yaml.get("exit_policy", "protection")).strip().lower()
+    CONFIRM_REVERSAL_SIGNALS = int(_bot_yaml.get("confirm_reversal_signals", 2))
 
     @staticmethod
     def get_default_bot_config() -> dict:
@@ -86,6 +89,8 @@ class Config:
             "confidence_threshold": float(bot_data.get("confidence_threshold", 0.60)),
             "leverage": int(bot_data.get("leverage", 10)),
             "risk_profile": str(bot_data.get("risk_profile", "moderate")).lower(),
+            "exit_policy": str(bot_data.get("exit_policy", "protection")).strip().lower(),
+            "confirm_reversal_signals": int(bot_data.get("confirm_reversal_signals", 2)),
             "last_signal_keys": {},
             "last_loop_at": None,
             "updated_at": now_iso
