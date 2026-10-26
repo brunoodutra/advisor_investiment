@@ -1,0 +1,39 @@
+FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+#ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# 1. Instalar dependências do sistema + curl/ca-certificates PRIMEIRO
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.10 \
+    python3-pip \
+    python3.10-dev \
+    curl \
+    ca-certificates \
+    libgomp1 \
+    libstdc++6 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar o uv usando o instalador oficial da Astral
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+ENV PATH="/root/.local/bin:$PATH"
+
+
+
+WORKDIR /workspace
+
+#COPY backend/AI/Classification/requirements.txt /tmp/requirements.txt
+COPY backend/AI/Classification/requirements.gpu.txt /tmp/requirements.gpu.txt
+
+# O uv instala os pacotes em poucos segundos e sem necessidade de cache na imagem
+RUN uv pip install --system --no-cache \
+   # -r /tmp/requirements.txt \
+    -r /tmp/requirements.gpu.txt \
+    jupyterlab \
+    ipykernel \
+    notebook
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8899", "--no-browser", "--allow-root", "--NotebookApp.token=", "--NotebookApp.password="]

@@ -140,81 +140,118 @@ export function updateCandleData(existingData, newPrice, timestamp, volume = 0) 
     }
 }
 
+const MODEL_SIGNAL_INTERVAL_SEC = 4 * 60 * 60;
+
+function chartIntervalSeconds(timeframe) {
+    switch (timeframe) {
+        case '1m': return 60;
+        case '5m': return 5 * 60;
+        case '15m': return 15 * 60;
+        case '1h': return 60 * 60;
+        case '4h': return MODEL_SIGNAL_INTERVAL_SEC;
+        case '1d': return 24 * 60 * 60;
+        case '1w': return 7 * 24 * 60 * 60;
+        default: return MODEL_SIGNAL_INTERVAL_SEC;
+    }
+}
+
+function recommendationTimestamp(rec) {
+    const time = String(rec?.Time || '').trim();
+    const date = String(rec?.Date || '').trim();
+    if (!date || !time) return null;
+    const parsed = new Date(`${date}T${time}Z`).getTime();
+    return Number.isFinite(parsed) ? parsed / 1000 : null;
+}
+
+/**
+ * CSV Date/Time is the closed 4h candle the model classified.
+ * The call is for the next candle (candle+1): that is when the user/bot can act.
+ */
+function markerCandleTime(recTimestamp, candlestickData, timeframe) {
+    const activeTime = recTimestamp + MODEL_SIGNAL_INTERVAL_SEC;
+    const tolerance = Math.max(chartIntervalSeconds(timeframe), MODEL_SIGNAL_INTERVAL_SEC);
+    let closestCandleTime = null;
+    let minDiff = Infinity;
+
+    candlestickData.forEach((candle) => {
+        const diff = Math.abs(candle.time - activeTime);
+        if (diff < minDiff && diff < tolerance) {
+            minDiff = diff;
+            closestCandleTime = candle.time;
+        }
+    });
+
+    return closestCandleTime;
+}
+
 /**
  * Creates recommendation markers for the chart.
  * @param {any[]} recommendationHistory An array of recommendation history objects.
  * @param {any[]} candlestickData An array of candlestick data objects.
  * @param {number} confidenceThreshold Minimum confidence percentage to display markers (default: 70).
+ * @param {string} timeframe Active chart timeframe.
  * @returns {any[]} An array of marker objects for the chart.
  */
-export function createRecommendationMarkers(recommendationHistory, candlestickData, confidenceThreshold = 70) {
-    console.log('DEBUG: createRecommendationMarkers called with', { 
-        recommendationHistoryLength: recommendationHistory?.length,
-        confidenceThreshold,
-        firstRecPercentage: recommendationHistory?.[0]?.percentage
-    });
-    
-    return recommendationHistory.map((rec, index) => {
+export function createRecommendationMarkers(recommendationHistory, candlestickData, confidenceThreshold = 70, timeframe = '4h') {
+    if (!Array.isArray(recommendationHistory) || !Array.isArray(candlestickData) || candlestickData.length === 0) {
+        return [];
+    }
+
+    const threshold = confidenceThreshold / 100;
+    const latestRec = recommendationHistory[recommendationHistory.length - 1];
+    const latestKind = latestRec?.recommendation;
+    const latestIsAction = latestKind === 'Buy' || latestKind === 'Sell' || latestKind === 'Compra' || latestKind === 'Venda';
+    const latestAction = latestIsAction
+        ? latestRec
+        : [...recommendationHistory].reverse().find((rec) => {
+            const kind = rec?.recommendation;
+            return kind === 'Buy' || kind === 'Sell' || kind === 'Compra' || kind === 'Venda';
+        });
+
+    const byTime = new Map();
+
+    recommendationHistory.forEach((rec, index) => {
         const percentage = parseFloat(rec.percentage) || 0;
-        const threshold = confidenceThreshold / 100;
-        console.log('DEBUG: createRecommendationMarkers', { 
-            index, 
-            percentage, 
-            threshold, 
-            confidenceThreshold,
-            shouldShow: percentage >= threshold 
-        });
-        if (percentage < threshold) {
-            return null;
-        }
-        
-        const recTimestamp = new Date(`${rec.Date}T${rec.Time}Z`).getTime() / 1000;
-        let closestCandleTime = null;
-        let minDiff = Infinity;
-        
-        candlestickData.forEach(candle => {
-            const diff = Math.abs(candle.time - recTimestamp);
-            const intervalSeconds = 4 * 60 * 60; // 4 hours in seconds
-            if (diff < minDiff && diff < intervalSeconds * 0.6) {
-                minDiff = diff;
-                closestCandleTime = candle.time;
-            }
-        });
-        
-        if (closestCandleTime === null) return null;
-        
-        const sortedHistory = [...recommendationHistory].sort((a, b) => 
-            new Date(`${b.Date}T${b.Time}Z`) - new Date(`${a.Date}T${a.Time}Z`)
-        );
-        const isLast = rec === sortedHistory[0];
-        
-        let markerStyle = {};
+        const isLatestAction = rec === latestRec && latestIsAction;
+        if (percentage < threshold && !isLatestAction) return;
+
+        const recTimestamp = recommendationTimestamp(rec);
+        if (recTimestamp == null) return;
+
+        const candleTime = markerCandleTime(recTimestamp, candlestickData, timeframe);
+        if (candleTime == null) return;
+
+        const isLast = rec === latestAction;
+        let markerStyle = null;
         if (rec.recommendation === 'Buy' || rec.recommendation === 'Compra') {
-            markerStyle = { 
-                position: 'belowBar', 
-                color: '#10b981', 
-                shape: 'arrowUp', 
-                text: 'Buy', 
+            markerStyle = {
+                position: 'belowBar',
+                color: '#10b981',
+                shape: 'arrowUp',
+                text: 'Buy',
                 size: isLast ? 1.8 : 1.2
             };
         } else if (rec.recommendation === 'Sell' || rec.recommendation === 'Venda') {
-            markerStyle = { 
-                position: 'aboveBar', 
-                color: '#ef4444', 
-                shape: 'arrowDown', 
-                text: 'Sell', 
+            markerStyle = {
+                position: 'aboveBar',
+                color: '#ef4444',
+                shape: 'arrowDown',
+                text: 'Sell',
                 size: isLast ? 1.8 : 1.2
             };
-        } else {
-            return null;
         }
-        
-        return { 
-            id: index,
-            time: closestCandleTime, 
-            ...markerStyle 
-        };
-    }).filter(marker => marker !== null);
+        if (!markerStyle) return;
+
+        const recTime = recTimestamp;
+        const previous = byTime.get(candleTime);
+        if (previous && recTime < previous._recTime) return;
+
+        byTime.set(candleTime, { id: index, time: candleTime, _recTime: recTime, ...markerStyle });
+    });
+
+    return [...byTime.values()]
+        .sort((a, b) => a.time - b.time)
+        .map(({ _recTime, ...marker }) => marker);
 }
 
 /**

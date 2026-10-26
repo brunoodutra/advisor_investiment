@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js?v=20260828a';
 import { state } from './state.js?v=20260828a';
 import { fetchRecommendation, fetchTargetStop, fetchData, fetchCryptoData, fetchSpecificRecommendation, fetchSentimentAnalysis, fetchCryptoNews } from './api.js?v=20260828a';
-import { loadLightweightChart} from './chart.js?v=20260828a';
+import { loadLightweightChart} from './chart.js?v=20261026rec';
 import { formatCurrency, formatLargeNumber, getIconUrls, setImageWithFallback } from './utils.js?v=20260828a';
 
 function isCryptoLocked(cryptoId) {
@@ -369,7 +369,9 @@ export async function loadRecommendationForListOptimized(crypto) {
     
     // Use cached recommendation if available
     const cacheKey = `recommendation_${config.symbol}_${state.settings.model}`;
-    let recommendation = state.cache[cacheKey]?.data;
+    const cached = state.cache[cacheKey];
+    const cacheFresh = cached && Date.now() - cached.timestamp < CONFIG.updateIntervals.prices;
+    let recommendation = cacheFresh ? cached.data : null;
     
     console.log('Cache key:', cacheKey, 'Recomendação em cache:', recommendation ? 'Sim' : 'Não');
     console.log('Cache completo:', state.cache);
@@ -440,9 +442,10 @@ export async function loadRecommendationForCard(crypto) {
     
     // Use cached recommendation if available
     const cacheKey = `recommendation_${config.symbol}_${state.settings.model}`;
-    let recommendation = state.cache[cacheKey]?.data;
+    const cached = state.cache[cacheKey];
+    const cacheFresh = cached && Date.now() - cached.timestamp < CONFIG.updateIntervals.prices;
+    let recommendation = cacheFresh ? cached.data : null;
     
-    // Fetch only if not cached or cache expired
     if (!recommendation) {
         recommendation = await fetchRecommendation(config.symbol);
     }

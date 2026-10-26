@@ -318,7 +318,33 @@ export function wireAuthUI() {
         });
     }
 
-    setAuthTab('login');
+    applyAuthIntentFromUrl();
     setAuthControls();
     showSupabaseConfigPanel(!isConfigured());
+}
+
+function authIntentFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const query = String(params.get('auth') || '').toLowerCase();
+    if (query === 'signup' || query === 'criar' || query === 'register') return 'signup';
+    if (query === 'login' || query === 'entrar' || query === 'signin') return 'login';
+
+    const hash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
+    if (hash === 'signup' || hash === 'criar') return 'signup';
+    if (hash === 'login' || hash === 'entrar') return 'login';
+    return null;
+}
+
+function applyAuthIntentFromUrl() {
+    const intent = authIntentFromUrl();
+    if (!intent) {
+        setAuthTab('login');
+        return;
+    }
+    if (isLoggedIn()) {
+        setAuthTab('login');
+        return;
+    }
+    showPage('auth');
+    setAuthTab(intent);
 }

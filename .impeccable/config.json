@@ -1,3 +1,118 @@
 {
-  "buildPath": "code"
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "frontend/dashboard/chart.js",
+          "frontend/dashboard/utils.js"
+        ],
+        "createdAt": "2026-10-11T18:22:01.607Z",
+        "reason": "Agent: lightweight-charts needs literal series colors; this edit only moves the signal marker onto the live 4h candle"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "frontend/dashboard/chart.js"
+        ],
+        "createdAt": "2026-10-11T18:22:34.921Z",
+        "reason": "Agent: pre-existing ruler tooltip radius; this edit only changes the marker import and timeframe argument"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "frontend/dashboard/chart.js"
+        ],
+        "createdAt": "2026-10-11T18:22:34.995Z",
+        "reason": "Agent: pre-existing ruler tooltip type sizes; this edit only changes the marker import and timeframe argument"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "frontend/dashboard/ui.js"
+        ],
+        "createdAt": "2026-10-11T18:23:12.402Z",
+        "reason": "Agent: pre-existing tooltip colors; this edit only updates the chart module cache key"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "frontend/dashboard/ui.js"
+        ],
+        "createdAt": "2026-10-11T18:23:12.490Z",
+        "reason": "Agent: pre-existing tooltip radius; this edit only updates the chart module cache key"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "frontend/dashboard/ui.js"
+        ],
+        "createdAt": "2026-10-11T18:23:12.555Z",
+        "reason": "Agent: pre-existing tooltip type size; this edit only updates the chart module cache key"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-10-11T18:38:35.281Z",
+        "reason": "Landing uses the user-pinned Lovable signal-desk world. DESIGN.md is scoped to #trade-bot-page only."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-10-11T18:38:35.362Z",
+        "reason": "Landing uses the user-pinned Lovable signal-desk world. DESIGN.md is scoped to #trade-bot-page only."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-10-11T18:38:35.429Z",
+        "reason": "Landing uses the user-pinned Lovable signal-desk world. DESIGN.md is scoped to #trade-bot-page only."
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-10-11T18:38:35.511Z",
+        "reason": "Landing uses the user-pinned Lovable signal-desk world. DESIGN.md is scoped to #trade-bot-page only."
+      },
+      {
+        "rule": "design-system-spacing",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-10-11T18:38:35.577Z",
+        "reason": "Landing uses the user-pinned Lovable signal-desk world. DESIGN.md is scoped to #trade-bot-page only."
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-10-11T18:38:35.641Z",
+        "reason": "Landing uses the user-pinned Lovable signal-desk world. DESIGN.md is scoped to #trade-bot-page only."
+      }
+    ]
+  }
 }

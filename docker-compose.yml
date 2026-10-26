@@ -21,7 +21,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/API:/app/backend/API
-      - ./backend/AI/Classification/Real_Time_Inference/Recommendations:/app/backend/AI/Classification/Real_Time_Inference/Recommendations
+      # Named volume: bind WSL→Docker Desktop vira tmpfs e a inferência grava
+      # num arquivo que a API nunca lê (card fica com CSV antigo).
+      - recommendations:/app/backend/AI/Classification/Real_Time_Inference/Recommendations
       - ./backend/Trade_Bot/data:/app/backend/Trade_Bot/data
       - ./backend/API/cache:/app/backend/API/cache
     environment:
@@ -48,7 +50,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile.inference.tf
     volumes:
-      - ./backend/AI/Classification/Real_Time_Inference/Recommendations:/app/backend/AI/Classification/Real_Time_Inference/Recommendations
+      - recommendations:/app/backend/AI/Classification/Real_Time_Inference/Recommendations
     restart: unless-stopped
 
   trade_bot:
@@ -100,3 +102,35 @@ services:
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
     profiles: ["notebook"]
     restart: unless-stopped
+    
+  crypto_experiments_notebook:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.notebook.crypto
+    working_dir: /workspace/backend/AI/Classification/Experiments/Cryptos
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8899", "--no-browser", "--allow-root", "--NotebookApp.token=", "--NotebookApp.password="]
+    ports:
+      - "127.0.0.1:8899:8899"
+    volumes:
+      - ./:/workspace
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-}
+      DEEPINFRA_API_KEY: ${DEEPINFRA_API_KEY:-}
+      DEEPINFRA_TOKEN: ${DEEPINFRA_TOKEN:-}
+      DEEPINFRA_BASE_URL: ${DEEPINFRA_BASE_URL:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+    profiles: ["notebook.crypto"]
+    restart: unless-stopped
+
+volumes:
+  recommendations:

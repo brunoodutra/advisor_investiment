@@ -1,5 +1,5 @@
 import { state } from './state.js?v=20260828a';
-import { ensureAuthReady, getSupabaseClient, isLoggedIn } from './auth.js?v=20260828a';
+import { ensureAuthReady, getSupabaseClient, isLoggedIn } from './auth.js?v=20261011auth';
 
 export async function loadUserSettings() {
     await ensureAuthReady();

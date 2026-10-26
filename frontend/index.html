@@ -132,7 +132,14 @@
         .nav-cluster {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            gap: 0.75rem 1.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .nav-links {
             display: none;
@@ -973,7 +980,10 @@
                     <a href="#como-funciona">Como funciona</a>
                     <a href="#conta">Conta</a>
                 </div>
-                <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
+                <div class="nav-actions">
+                    <a class="btn btn--ghost" href="/dashboard/?auth=login">Entrar</a>
+                    <a class="btn btn--primary" href="/dashboard/?auth=signup">Criar conta</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -993,10 +1003,10 @@
                         <li>Aconselha — nenhuma ordem sai daqui</li>
                     </ul>
                     <div class="btn-row">
-                        <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
-                        <a class="btn btn--ghost" href="#prova">Ver prova</a>
+                        <a class="btn btn--primary" href="/dashboard/?auth=signup">Criar conta</a>
+                        <a class="btn btn--ghost" href="/dashboard/">Abrir painel</a>
                     </div>
-                    <p class="hero__hint">Sem cadastro, só Bitcoin. <a href="#prova">Sentimento e chat</a> · <a href="#conta">o que a conta libera</a>.</p>
+                    <p class="hero__hint">Sem cadastro, só Bitcoin — <a href="/dashboard/">abra o painel</a>. <a href="#prova">Sentimento e chat</a> · <a href="#conta">o que a conta libera</a>.</p>
                 </div>
 
                 <div id="plano">
@@ -1274,7 +1284,7 @@
                         <p>A assinatura ainda não está à venda. Criar conta libera o produto de hoje; a cobrança só começa quando publicarmos planos.</p>
                     </div>
                     <div class="access__aside">
-                        <a class="btn btn--primary" href="/dashboard/">Criar conta</a>
+                        <a class="btn btn--primary" href="/dashboard/?auth=signup">Criar conta</a>
                         <p class="access__inst">Precisa de API para o time? <a href="mailto:contato@aiinvestadvisor.com?subject=CryptoDash%20Pro%20Institucional">Fale conosco</a></p>
                     </div>
                 </div>
@@ -1285,7 +1295,7 @@
     <footer>
         <div class="wrap">
             <p>© 2026 CryptoDash Pro. Advisor de cripto: não é exchange, não é bot de execução e não envia ordens. Conteúdo educacional, não é recomendação financeira. A decisão de investir é sempre sua.</p>
-            <a href="/dashboard/">Já tenho conta</a>
+            <a href="/dashboard/?auth=login">Já tenho conta</a>
         </div>
     </footer>
     <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
